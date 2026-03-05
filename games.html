@@ -107,69 +107,33 @@
     margin-bottom: 2px;
   }
 
-  /* ── GAME TAB SELECTORS ─────────────────────── */
-  .game-selector-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin: 1.4em 0 0.8em;
-    flex-wrap: wrap;
-  }
-
-  .game-label {
+  /* ── GAME PILLS ─────────────────────────────── */
+  .game-pill {
+    font-family: Georgia, serif;
     font-size: 0.95em;
-    color: #555;
     font-style: italic;
-    white-space: nowrap;
-  }
-
-  .game-tabs {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .game-tab {
-    font-family: Georgia, serif;
-    font-size: 0.88em;
-    padding: 5px 16px;
-    background: #f4f4f4;
-    color: #555;
-    border: 1.5px solid #ddd;
-    border-radius: 999px;
+    color: #fff;
+    background: #888;
+    border: none;
+    border-radius: 3px;
+    padding: 2px 8px;
+    width: 180px;
+    text-align: center;
+    flex-shrink: 0;
     cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-    display: inline-block;
-    line-height: 1.4;
+    transition: background 0.15s;
+    display: block;
+    line-height: 1.6;
   }
+  .game-pill:hover { background: #666; }
+  .game-pill.active { background: #1b1e23; }
 
-  .game-tab:hover { background: #e8e8e8; color: #1b1e23; }
-  .game-tab.active { background: #1b1e23; color: #fff; border-color: #1b1e23; }
-
-  .game-tabs-small {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
+  .ess-pill {
+    margin-top: 4px;
+    background: #ccc;
   }
-
-  .game-tab-small {
-    font-family: Georgia, serif;
-    font-size: 0.82em;
-    padding: 3px 12px;
-    background: #f4f4f4;
-    color: #555;
-    border: 1.5px solid #ddd;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-    display: inline-block;
-    line-height: 1.4;
-  }
-
-  .game-tab-small:hover { background: #e8e8e8; color: #1b1e23; }
-  .game-tab-small.active { background: #1b1e23; color: #fff; border-color: #1b1e23; }
+  .ess-pill:hover { background: #aaa; }
+  .ess-pill.ess-on { background: #1b1e23; }
 
   /* ── PAYOFF MATRIX ──────────────────────────── */
   .matrix-wrap {
@@ -190,12 +154,12 @@
   }
 
   .matrix-corner {
-    width: 110px;
+    width: 88px;
     flex-shrink: 0;
   }
 
   .matrix-col-header {
-    width: 110px;
+    width: 88px;
     text-align: center;
     font-size: 0.88em;
     color: #555;
@@ -210,7 +174,7 @@
   }
 
   .matrix-row-header {
-    width: 114px;
+    width: 108px;
     flex-shrink: 0;
     font-size: 0.88em;
     color: #555;
@@ -226,15 +190,15 @@
   /* Table-like grid: outer border + inner shared borders */
   .matrix-grid {
     display: grid;
-    grid-template-columns: 110px 110px;
+    grid-template-columns: 88px 88px;
     grid-template-rows: auto auto;
-    border-top: 1.5px solid #aaa;
-    border-left: 1.5px solid #aaa;
+    border-top: 1.5px solid #fff;
+    border-left: 1.5px solid #fff;
   }
 
   .matrix-cell {
-    width: 110px;
-    height: 80px;
+    width: 88px;
+    height: 66px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -242,8 +206,8 @@
     font-size: 1.6em;
     font-weight: 700;
     color: #1b1e23;
-    border-right: 1.5px solid #aaa;
-    border-bottom: 1.5px solid #aaa;
+    border-right: 1.5px solid #fff;
+    border-bottom: 1.5px solid #fff;
     position: relative;
     transition: background 0.3s;
     box-sizing: border-box;
@@ -281,7 +245,7 @@
 
   /* ── ESS ANNOTATION ─────────────────────────── */
   .ess-annotation {
-    font-size: 0.9em;
+    font-size: 0.95em;
     font-style: italic;
     color: #555;
     background: #fafafa;
@@ -416,116 +380,43 @@
 
 <p>To analyse these interactions we use a <strong>payoff matrix</strong>. Imagine two players: an <strong>actor</strong> who chooses a strategy, and a <strong>recipient</strong> who also chooses a strategy. The matrix shows the actor's payoff for each combination of choices. The four cells represent every possible pairing: both cooperate, both defect, or one cooperates while the other defects.</p>
 
-<p>The three classic two-player games differ in how these four payoffs are ordered — specifically, which strategies do best and worst depending on what the other player does.</p>
+<p>The four classic two-player games differ in how the payoffs of individual interactions are ordered — which strategies do best and worst depends on the game and on what the other player does.</p>
 
-<hr>
-
-<h2>The Prisoner's Dilemma</h2>
-
-<p>In the <strong>Prisoner's Dilemma</strong>, two suspects are held separately and each is offered the same deal: testify against the other (defect) or stay silent (cooperate). If both stay silent, both receive a modest reward. If both testify, both receive a moderate punishment. But if one testifies and the other stays silent, the defector goes free while the cooperator receives the worst outcome.</p>
-
-<p>In biological terms, defection is always the better response regardless of what the other individual does. If your partner cooperates, defecting gives you a higher payoff than cooperating. If your partner defects, defecting still gives you a higher payoff than cooperating. This logic — that one strategy always beats another regardless of context — is called <strong>dominance</strong>.</p>
-
-<p>The tragedy of the Prisoner's Dilemma is that mutual defection (the outcome both players are pushed towards) is worse for everyone than mutual cooperation.</p>
-
-<h4>The actor's payoffs — how much does each combination of strategies yield?</h4>
-
-<div id="matrix-pd"></div>
-
-<div class="matrix-caption">
-  <strong>Reading the matrix:</strong> Each cell shows the actor's payoff. The actor's strategy is on the left; the recipient's strategy is across the top. In the Prisoner's Dilemma, the payoff ranking is: <em>Defect vs. Cooperate &gt; Cooperate vs. Cooperate &gt; Defect vs. Defect &gt; Cooperate vs. Defect</em>. Defection is always better for the actor, no matter what the recipient does.
-</div>
-
-<hr>
-
-<h2>Chicken, Us vs. Them, and Mutualism</h2>
-
-<p>Not all games have a dominant strategy. In the game of <strong>Chicken</strong>, two drivers speed towards each other — the one who swerves first (cooperates) loses face, but if neither swerves (both defect) the result is catastrophic. Here, the worst outcome is mutual defection, not unilateral cooperation.</p>
-
-<p>In the game of <strong>Us vs. Them</strong> (also called the <strong>Stag Hunt</strong>), two hunters can each choose to hunt a large stag together (cooperate) or hunt a small hare alone (defect). Hunting the stag requires both players to cooperate — if your partner defects, your cooperation yields nothing. Here, the best outcome is mutual cooperation, and the game rewards matching your partner's strategy.</p>
-
-<p>In <strong>Mutualism</strong>, both partners gain more from cooperating than from defecting — regardless of what the other individual does. This is the mirror image of the Prisoner's Dilemma: cooperation is the dominant strategy. Examples include cleaner fish that reliably service clients, or mycorrhizal fungi that consistently provide nutrients to plant roots. There is no temptation to defect because exploiting your partner always yields a lower payoff than cooperating.</p>
-
-<p>Explore the matrices below to see how the payoff rankings shift across all four games.</p>
-
-<div class="game-selector-row">
-  <label class="game-label">Select game:</label>
-  <div class="game-tabs" id="game-tabs">
-    <button class="game-tab active" data-game="pd">Prisoner's Dilemma</button>
-    <button class="game-tab" data-game="chicken">Chicken</button>
-    <button class="game-tab" data-game="stag">Us vs. Them</button>
-    <button class="game-tab" data-game="mutualism">Mutualism</button>
-  </div>
-</div>
-
-<div id="matrix-compare"></div>
+<!-- ── COMBINED FIGURE: pills left, matrix right ── -->
+<table style="border:none; border-collapse:collapse; margin:1.4em 0 0.5em; width:100%;">
+  <tr style="vertical-align:top;">
+    <td style="border:none; padding:0 24px 0 0; width:1%; white-space:nowrap;">
+      <div style="display:flex; flex-direction:column; gap:7px;">
+        <button class="game-pill active" data-game="pd">Prisoner's Dilemma</button>
+        <button class="game-pill" data-game="chicken">Chicken</button>
+        <button class="game-pill" data-game="stag">Staghunt</button>
+        <button class="game-pill" data-game="mutualism">Mutualism</button>
+        <button class="game-pill ess-pill" id="ess-toggle-btn">ESS Off</button>
+      </div>
+    </td>
+    <td style="border:none; padding:0;">
+      <div id="matrix-main"></div>
+    </td>
+  </tr>
+</table>
 
 <div id="matrix-description" class="matrix-caption"></div>
 
-<hr>
+<div class="viz" id="payoff-chart"></div>
+
+<div id="game-description-blurb" class="ess-annotation"></div>
 
 <h2>Playing Against the Population</h2>
 
-<p>So far we've examined single encounters. But in nature, animals interact repeatedly with many different partners — some cooperators, some defectors. The key question for evolution is: <em>which strategy does better on average</em> when played against a mixed population?</p>
+<p>In nature, animals do not play a single game — they interact repeatedly with many different partners. The key question for evolution is: <em>which strategy does better on average</em> across all those encounters? When the population is mostly cooperators, the actor meets cooperators most of the time; when most individuals defect, defectors dominate encounters. The average payoff of each strategy therefore changes as the mix of cooperators and defectors in the population shifts — and evolution favours whichever strategy earns more.</p>
 
-<p>Imagine a large population where a fraction <strong>f<sub>C</sub></strong> of individuals are cooperators and the rest are defectors. An actor playing cooperator will sometimes meet a cooperator (getting the C–C payoff) and sometimes meet a defector (getting the C–D payoff). A defecting actor similarly mixes D–C and D–D payoffs. The average payoff of each strategy is a weighted combination determined by the proportion of cooperators in the population.</p>
-
-<p>Because payoffs depend linearly on the frequency of each type, the average payoff for cooperators and defectors each trace a straight line as the proportion of cooperators in the population changes from 0 to 1.</p>
-
-<h4 id="payoff-chart-title">How do average payoffs compare across different population compositions?</h4>
-
-<div class="controls">
-  <div class="checkbox-group">
-    <div class="checkbox-label">Load preset</div>
-    <div class="game-tabs-small" id="game-tabs-chart">
-      <button class="game-tab-small active" data-game="pd">PD</button>
-      <button class="game-tab-small" data-game="chicken">Chicken</button>
-      <button class="game-tab-small" data-game="stag">Us vs. Them</button>
-      <button class="game-tab-small" data-game="mutualism">Mutualism</button>
-    </div>
-  </div>
-</div>
-
-<div class="viz" id="payoff-chart"></div>
-<p class="drag-hint">Drag the coloured endpoints up or down to change payoffs. The chart title updates to show which game is being played.</p>
-
-<hr>
-
-<h2>Evolutionary Stability: Where Does the Population End Up?</h2>
-
-<p>Evolution favours strategies that do better than average. When a strategy's payoff line lies <em>above</em> the other at some frequency, that strategy will increase in the population — individuals using it produce more offspring than those using the alternative. This gives us a powerful tool for predicting where a population will evolve to: an <strong>Evolutionarily Stable Strategy (ESS)</strong>.</p>
-
-<p>An ESS is a strategy that, once common in a population, cannot be invaded by a rare alternative. To identify it, we look for the frequency at which the two payoff lines cross — this is the <strong>equilibrium</strong>. But not every crossing is an ESS. The stability depends on the slopes of the lines: at a stable equilibrium, a small perturbation pushes the population back to that point. At an unstable equilibrium, a small perturbation sends the population away from it.</p>
-
-<p>Drag the endpoints of the payoff lines up or down to explore how the game structure determines evolutionary outcomes.</p>
-
-<div id="ess-diagram"></div>
-
-<div class="ess-annotation" id="ess-annotation"></div>
-
-<div class="controls">
-  <div class="checkbox-group">
-    <div class="checkbox-label">Load preset</div>
-    <div class="game-tabs-small" id="game-tabs-ess">
-      <button class="game-tab-small active" data-game="pd">PD</button>
-      <button class="game-tab-small" data-game="chicken">Chicken</button>
-      <button class="game-tab-small" data-game="stag">Us vs. Them</button>
-      <button class="game-tab-small" data-game="mutualism">Mutualism</button>
-    </div>
-  </div>
-</div>
-
-<div class="viz" id="ess-chart"></div>
-
-<h4 id="ess-chart-title" style="margin-top:0.4em"></h4>
-<p class="drag-hint">Drag the coloured endpoints up or down to explore how payoff structure shapes evolutionary stability.</p>
+<p>The slope of each payoff line, and whether they cross — and if so, where — determines how the population evolves in response to selection.</p>
 
 <div class="questions">
   <h3>Questions:</h3>
 
   <div class="question-block" id="q1_1">
-    <p><strong>Q1.</strong> <em>In the <strong>Prisoner's Dilemma</strong>, cooperators and defectors interact in a population. As you increase <strong>f<sub>C</sub></strong> from 0 to 1, which strategy always has the higher average payoff? Set <strong>f<sub>C</sub></strong> to your answer and check it using the payoff chart above.</em></p>
-    <p style="font-size:0.9em;color:#555;margin-top:0.3em">Set <strong>f<sub>C</sub></strong> = 0 for "defectors always win" or <strong>f<sub>C</sub></strong> = 1 for "cooperators always win".</p>
+    <p><strong>Q1.</strong> <em>Load the <strong>Prisoner's Dilemma</strong> using the selector above. No matter how many cooperators or defectors are in the population, one strategy always earns more. Which one?</em></p>
     <div class="q-slider-row">
       <input type="range" class="q-slider" min="0" max="1" step="1" value="0" oninput="updateQSliderFC('q1_1',this.value)">
       <span class="q-pq" id="q1_1_pq">Defectors always win</span>
@@ -535,25 +426,59 @@
   </div>
 
   <div class="question-block" id="q1_2">
-    <p><strong>Q2.</strong> <em>In <strong>Us vs. Them</strong> (Stag Hunt), there is a crossing point — a frequency at which cooperators and defectors have exactly equal payoffs. Is this crossing point a <strong>stable</strong> or <strong>unstable</strong> equilibrium? What happens to a population that starts just below this point?</em></p>
-    <p style="font-size:0.9em;color:#555;margin-top:0.3em">Set <strong>f<sub>C</sub></strong> = 0 for "unstable — drifts to all-defectors" or <strong>f<sub>C</sub></strong> = 1 for "stable — stays at the crossing".</p>
+    <p><strong>Q2.</strong> <em>Your partner has just <strong>defected</strong>. For each game below, should you cooperate or defect in response? Use the payoff matrix to read off which choice gives you the higher payoff when the recipient defects.</em></p>
+
+    <p style="margin-top:0.8em;margin-bottom:0.3em;font-size:0.95em;"><strong>Prisoner's Dilemma</strong></p>
     <div class="q-slider-row">
-      <input type="range" class="q-slider" min="0" max="1" step="1" value="0" oninput="updateQSliderFC('q1_2',this.value)">
-      <span class="q-pq" id="q1_2_pq">Unstable — drifts to all-defectors</span>
+      <input type="range" class="q-slider" min="0" max="1" step="1" value="0" oninput="updateQSliderCoop('q1_2a',this.value)">
+      <span class="q-pq" id="q1_2a_pq">Cooperate</span>
     </div>
-    <button class="q-btn" onclick="checkAnswer('q1_2')">Check Answer</button>
-    <div class="q-feedback" id="q1_2_fb"></div>
+    <button class="q-btn" onclick="checkAnswer('q1_2a')">Check Answer</button>
+    <div class="q-feedback" id="q1_2a_fb"></div>
+
+    <p style="margin-top:0.8em;margin-bottom:0.3em;font-size:0.95em;"><strong>Chicken</strong></p>
+    <div class="q-slider-row">
+      <input type="range" class="q-slider" min="0" max="1" step="1" value="0" oninput="updateQSliderCoop('q1_2b',this.value)">
+      <span class="q-pq" id="q1_2b_pq">Cooperate</span>
+    </div>
+    <button class="q-btn" onclick="checkAnswer('q1_2b')">Check Answer</button>
+    <div class="q-feedback" id="q1_2b_fb"></div>
+
+    <p style="margin-top:0.8em;margin-bottom:0.3em;font-size:0.95em;"><strong>Staghunt</strong></p>
+    <div class="q-slider-row">
+      <input type="range" class="q-slider" min="0" max="1" step="1" value="0" oninput="updateQSliderCoop('q1_2c',this.value)">
+      <span class="q-pq" id="q1_2c_pq">Cooperate</span>
+    </div>
+    <button class="q-btn" onclick="checkAnswer('q1_2c')">Check Answer</button>
+    <div class="q-feedback" id="q1_2c_fb"></div>
+
+    <p style="margin-top:0.8em;margin-bottom:0.3em;font-size:0.95em;"><strong>Mutualism</strong></p>
+    <div class="q-slider-row">
+      <input type="range" class="q-slider" min="0" max="1" step="1" value="0" oninput="updateQSliderCoop('q1_2d',this.value)">
+      <span class="q-pq" id="q1_2d_pq">Cooperate</span>
+    </div>
+    <button class="q-btn" onclick="checkAnswer('q1_2d')">Check Answer</button>
+    <div class="q-feedback" id="q1_2d_fb"></div>
   </div>
 
   <div class="question-block" id="q1_3">
-    <p><strong>Q3.</strong> <em>In the game of <strong>Chicken</strong>, the payoff lines cross somewhere between 0 and 1. What does this crossing represent, and is the mixed population at that point stable or unstable?</em></p>
-    <p style="font-size:0.9em;color:#555;margin-top:0.3em">Set <strong>f<sub>C</sub></strong> = 0 for "unstable — populations diverge" or <strong>f<sub>C</sub></strong> = 1 for "stable — populations converge to the crossing".</p>
+    <p><strong>Q3.</strong> <em>Turn on the <strong>ESS toggle</strong> and load <strong>Chicken</strong>. The two payoff lines cross at an interior point. Is this crossing a stable or unstable equilibrium — does the population converge toward it, or drift away?</em></p>
     <div class="q-slider-row">
-      <input type="range" class="q-slider" min="0" max="1" step="1" value="0" oninput="updateQSliderFC('q1_3',this.value)">
+      <input type="range" class="q-slider" min="0" max="1" step="1" value="0" oninput="updateQSliderStability('q1_3',this.value)">
       <span class="q-pq" id="q1_3_pq">Unstable — populations diverge</span>
     </div>
     <button class="q-btn" onclick="checkAnswer('q1_3')">Check Answer</button>
     <div class="q-feedback" id="q1_3_fb"></div>
+  </div>
+
+  <div class="question-block" id="q1_4">
+    <p><strong>Q4.</strong> <em>Now load <strong>Staghunt</strong> with the ESS toggle on. The payoff lines also cross at an interior point — but unlike Chicken, this crossing is <strong>unstable</strong>. What determines which ESS the population actually reaches: all-cooperators or all-defectors?</em></p>
+    <div class="q-slider-row">
+      <input type="range" class="q-slider" min="0" max="1" step="1" value="0" oninput="updateQSliderStarting('q1_4',this.value)">
+      <span class="q-pq" id="q1_4_pq">The starting frequency of cooperators</span>
+    </div>
+    <button class="q-btn" onclick="checkAnswer('q1_4')">Check Answer</button>
+    <div class="q-feedback" id="q1_4_fb"></div>
   </div>
 
 </div>
@@ -585,8 +510,8 @@ const GAMES = {
     // Cooperate row: CC higher than CD → CC=dark blue, CD=light blue
     // Defect row:    DC higher than DD → DC=dark red,  DD=light red
     colors: {CC:'#4a7fa5', CD:'#b8d4e8', DC:'#b83232', DD:'#f0b8b8'},
-    description: '<strong>Prisoner\'s Dilemma:</strong> Defection dominates — it always pays better than cooperation, no matter what the recipient does. The ranking is DC &gt; CC &gt; DD &gt; CD. Notice that mutual defection (DD = 1) is worse than mutual cooperation (CC = 3), yet individual incentives push everyone to defect. The ESS is <strong>all defection</strong>.',
-    ess: 'ESS: <strong>All Defectors</strong>. The defector payoff line lies entirely above the cooperator payoff line for all population frequencies. Once defectors dominate, cooperators cannot invade — defection is the only stable outcome.',
+    description: '<strong>Prisoner\'s Dilemma.</strong> Two suspects are held separately and each is offered the same deal: testify against the other (defect) or stay silent (cooperate). In biological terms, defecting is always the better response regardless of what the other player does — this is called <strong>dominance</strong>. The tragedy is that mutual defection, the outcome both players are driven towards, is worse for everyone than mutual cooperation would have been.',
+    ess: '<strong>ESS — All Defectors.</strong> The defector payoff line lies entirely above the cooperator line for every population frequency. No matter how many cooperators are present, defectors always earn more. Once defectors dominate, cooperators cannot invade — defection is the only evolutionarily stable outcome.',
   },
   chicken: {
     name: 'Chicken',
@@ -595,18 +520,18 @@ const GAMES = {
     // Cooperate row: CC higher than CD → CC=dark blue, CD=light blue
     // Defect row:    DC higher than DD → DC=dark red,  DD=light red
     colors: {CC:'#4a7fa5', CD:'#b8d4e8', DC:'#b83232', DD:'#f0b8b8'},
-    description: '<strong>Chicken:</strong> Here the payoffs when the recipient defects are reversed. Cooperating against a defector (CD = 1) is better than mutual defection (DD = 0). There is no dominant strategy — the best move depends on what your partner does. The payoff lines cross, creating a <strong>stable mixed equilibrium</strong>.',
-    ess: 'ESS: <strong>Mixed Stable Equilibrium</strong>. The payoff lines cross at an interior frequency. To the left of the crossing, defectors earn more (increasing); to the right, cooperators earn more (increasing). The population is pulled towards the crossing from both sides — this is a <strong>stable</strong> ESS at a mixed frequency.',
+    description: '<strong>Chicken.</strong> Two drivers speed towards each other — the one who swerves first (cooperates) loses face, but if neither swerves (both defect) the result is catastrophic. Unlike the Prisoner\'s Dilemma, the worst outcome here is mutual defection. There is no dominant strategy: the best move depends entirely on what your partner does, so the outcome is always a tension between aggression and backing down.',
+    ess: '<strong>ESS — Stable Mixed Equilibrium.</strong> The payoff lines cross at an interior frequency. To the left of the crossing defectors earn more, pushing frequency up; to the right cooperators earn more, pushing it back down. The population converges to the crossing from both sides — this is a <em>stable</em> ESS at a mixed frequency of cooperators and defectors.',
   },
   stag: {
-    name: 'Us vs. Them',
+    name: 'Staghunt',
     // Payoff ranking: CC > DC > DD > CD
     CC: 5, CD: 0, DC: 3, DD: 1,
     // Cooperate row: CC higher than CD → CC=dark blue, CD=light blue
     // Defect row:    DC higher than DD → DC=dark red,  DD=light red
     colors: {CC:'#4a7fa5', CD:'#b8d4e8', DC:'#b83232', DD:'#f0b8b8'},
-    description: '<strong>Us vs. Them (Stag Hunt):</strong> Mutual cooperation is now the highest payoff (CC = 5). The best strategy depends entirely on what you expect others to do. If most others cooperate, cooperating is best. If most others defect, defecting is best. The payoff lines cross at an interior frequency, but unlike Chicken, this crossing is <strong>unstable</strong>.',
-    ess: 'ESS: <strong>Two Stable Endpoints — Unstable Interior</strong>. The payoff lines cross, but the crossing is an <em>unstable</em> equilibrium. To the left, defectors earn more — the population drifts to all-defection. To the right, cooperators earn more — the population drifts to all-cooperation. Which ESS a population reaches depends on its starting frequency: a "tipping point" separates the two basins of attraction.',
+    description: '<strong>Staghunt.</strong> Two hunters can each choose to hunt a large stag together (cooperate) or hunt a small hare alone (defect). Hunting the stag requires both players to cooperate — if your partner defects, your cooperation yields nothing. The best outcome is mutual cooperation, but only if you trust that your partner will also cooperate. The game rewards coordination: each player does best by matching what the other does.',
+    ess: '<strong>ESS — Two Stable Endpoints, Unstable Interior.</strong> The payoff lines cross, but this crossing is an <em>unstable</em> equilibrium — a tipping point. Below it, defectors earn more and the population drifts to all-defection. Above it, cooperators earn more and the population climbs to all-cooperation. Which ESS is reached depends entirely on where the population starts.',
   },
   mutualism: {
     name: 'Mutualism',
@@ -614,8 +539,8 @@ const GAMES = {
     // Mirror image of Prisoner's Dilemma: cooperation is the dominant strategy
     CC: 5, CD: 3, DC: 1, DD: 0,
     colors: {CC:'#4a7fa5', CD:'#b8d4e8', DC:'#b83232', DD:'#f0b8b8'},
-    description: '<strong>Mutualism:</strong> In mutualism, both partners benefit from cooperating — and cooperating is always the better choice regardless of what the other individual does. The payoff ranking is CC &gt; CD &gt; DC &gt; DD. Cooperation dominates: it yields a higher payoff than defection whether the recipient cooperates or defects. The ESS is <strong>all cooperation</strong>.',
-    ess: 'ESS: <strong>All Cooperators</strong>. The cooperator payoff line lies entirely above the defector payoff line for all population frequencies. Once cooperators dominate, defectors cannot invade — cooperation is the only stable outcome. This is the mirror image of the Prisoner\'s Dilemma.',
+    description: '<strong>Mutualism.</strong> Both partners gain more from cooperating than from defecting, regardless of what the other individual does. Examples include cleaner fish that reliably service clients, or mycorrhizal fungi that consistently provide nutrients to plant roots. This is the mirror image of the Prisoner\'s Dilemma: cooperation is the dominant strategy, and there is no temptation to defect because exploiting your partner always yields a lower payoff.',
+    ess: '<strong>ESS — All Cooperators.</strong> The cooperator payoff line lies entirely above the defector line for every population frequency. No matter how rare cooperators are, they always earn more than defectors. Once cooperators dominate, defectors cannot invade — cooperation is the only evolutionarily stable outcome.',
   }
 };
 
@@ -623,57 +548,81 @@ const GAMES = {
 // STATE
 // ═══════════════════════════════════════════════════════════
 let currentGameCompare = 'pd';
-let currentGameChart   = 'pd';
-let currentGameEss     = 'pd';
-let freqSliderVal      = 0.5;
-let essSliderVal       = 0.5;
+
+// ═══════════════════════════════════════════════════════════
+// SHARED PAYOFF STATE
+// ═══════════════════════════════════════════════════════════
+let customPayoffs = { CC: 3, CD: 0, DC: 5, DD: 1 }; // start as PD
+let currentPillGame = 'pd';
+let essOn = false;
 
 // ═══════════════════════════════════════════════════════════
 // PAYOFF MATRIX RENDERER
+// ═══════════════════════════════════════════════════════════
+// PAYOFF MATRIX RENDERER — uses live customPayoffs values
 // ═══════════════════════════════════════════════════════════
 function renderMatrix(containerId, gameKey, showRank) {
   const g = GAMES[gameKey];
   const el = document.getElementById(containerId);
   if (!el) return;
 
-  const cell = (val, col) => `<div class="matrix-cell" style="background:${col};">${val}</div>`;
+  // Use live drag values; colours from named game
+  const v = customPayoffs;
+  const c = g.colors;
 
-  el.innerHTML = `
-    <div class="matrix-wrap">
-      <div class="matrix-outer">
-        <div class="matrix-header-label" style="margin-left:134px;width:220px">Recipient's Strategy</div>
-        <div style="display:flex;align-items:stretch">
-          <div style="display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding-right:6px;width:20px;margin-top:28px">
-            <div class="matrix-header-label" style="writing-mode:vertical-rl;transform:rotate(180deg);height:160px;width:auto;letter-spacing:0.08em">Actor's Strategy</div>
-          </div>
-          <div>
-            <div style="display:flex;margin-bottom:4px">
-              <div style="width:114px"></div>
-              <div class="matrix-col-header">Cooperate</div>
-              <div class="matrix-col-header">Defect</div>
-            </div>
-            <div style="display:flex;align-items:stretch">
-              <div style="display:flex;flex-direction:column;width:114px">
-                <div class="matrix-row-header" style="height:80px;border-top:1.5px solid #aaa;border-bottom:0.75px solid #aaa;">Cooperate</div>
-                <div class="matrix-row-header" style="height:80px;border-top:0.75px solid #aaa;border-bottom:1.5px solid #aaa;">Defect</div>
-              </div>
-              <div class="matrix-grid">
-                ${cell(g.CC, g.colors.CC)}
-                ${cell(g.CD, g.colors.CD)}
-                ${cell(g.DC, g.colors.DC)}
-                ${cell(g.DD, g.colors.DD)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`;
+  const cell = (val, col) =>
+    `<td style="width:82px;height:66px;background:${col};text-align:center;` +
+    `vertical-align:middle;font-family:Georgia,serif;font-size:1.6em;font-weight:700;` +
+    `color:#1b1e23;border:2px solid #fff;box-sizing:border-box;">${val}</td>`;
+
+  const hdr = (txt) =>
+    `<td style="border:none;text-align:center;font-size:0.95em;color:#555;` +
+    `font-style:italic;padding-bottom:4px;width:82px;">${txt}</td>`;
+
+  const rowHdr = (txt) =>
+    `<td style="border:none;text-align:right;font-size:0.95em;color:#555;` +
+    `font-style:italic;padding-right:10px;white-space:nowrap;vertical-align:middle;">${txt}</td>`;
+
+  const recipientHdr =
+    `<td colspan="2" style="border:none;text-align:center;padding-bottom:2px;` +
+    `font-size:0.95em;font-weight:600;color:#888;text-transform:uppercase;` +
+    `letter-spacing:0.08em;">Recipient</td>`;
+
+  const actorLabel = (txt) =>
+    `<td style="border:none;text-align:right;font-size:0.82em;font-weight:600;` +
+    `color:#888;text-transform:uppercase;letter-spacing:0.06em;` +
+    `padding-right:6px;white-space:nowrap;vertical-align:middle;">${txt}</td>`;
+
+  el.innerHTML =
+    `<table style="border-collapse:collapse;border-spacing:0;margin:0;">` +
+      `<tr>` +
+        `<td style="border:none;"></td>` +
+        `<td style="border:none;"></td>` +
+        `${recipientHdr}` +
+      `</tr>` +
+      `<tr>` +
+        `<td style="border:none;"></td>` +
+        `<td style="border:none;"></td>` +
+        `${hdr('Cooperate')}` +
+        `${hdr('Defect')}` +
+      `</tr>` +
+      `<tr>` +
+        `<td rowspan="2" style="border:none;padding:0 2px 0 0;vertical-align:middle;">` +
+          `<div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:0.95em;` +
+          `font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;` +
+          `text-align:center;white-space:nowrap;">Actor</div>` +
+        `</td>` +
+        `${rowHdr('Cooperate')}` +
+        `${cell(v.CC, c.CC)}` +
+        `${cell(v.CD, c.CD)}` +
+      `</tr>` +
+      `<tr>` +
+        `${rowHdr('Defect')}` +
+        `${cell(v.DC, c.DC)}` +
+        `${cell(v.DD, c.DD)}` +
+      `</tr>` +
+    `</table>`;
 }
-
-// ═══════════════════════════════════════════════════════════
-// SHARED PAYOFF STATE — both charts read from here
-// ═══════════════════════════════════════════════════════════
-let customPayoffs = { CC: 3, CD: 0, DC: 5, DD: 1 }; // start as PD
 
 // Identify which named game matches the current payoffs.
 // Compare the two lines at each endpoint:
@@ -683,7 +632,7 @@ let customPayoffs = { CC: 3, CD: 0, DC: 5, DD: 1 }; // start as PD
 //   PD:          Defect wins at both    (DC≥CC, DD≥CD)
 //   Mutualism:   Cooperate wins at both (CC≥DC, CD≥DD)
 //   Chicken:     Defect wins at All-C, Cooperate wins at All-D (DC≥CC, CD≥DD)
-//   Us vs. Them: Cooperate wins at All-C, Defect wins at All-D (CC≥DC, DD≥CD)
+//   Staghunt: Cooperate wins at All-C, Defect wins at All-D (CC≥DC, DD≥CD)
 // Ties (equal at an endpoint) sit on the boundary; we assign to the category
 // where the *other* endpoint still has a strict winner.
 function identifyGame(p) {
@@ -735,11 +684,6 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
   // Track which key is locked for this drag gesture
   let lockedKey = null;
 
-  // Reference to peer chart's drawDynamic — set externally after both charts init
-  let peerDrawDynamic = null;
-  // Register this chart's drawDynamic so the peer can find it
-  el._setDrawDynamic = (fn) => { peerDrawDynamic = fn; };
-
   function buildScales(payoffs) {
     const pad = 0.1 * iW;
     const xS = d3.scaleLinear().domain([1,0]).range([pad, iW - pad]);
@@ -771,7 +715,7 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
       .attr('d', lineGen).attr('fill','none')
       .attr('stroke','#b05a3a').attr('stroke-width',2.5);
 
-    // ESS annotations (only for ESS chart)
+    // ESS annotations
     if (drawESSAnnotations) {
       const denom = CC - CD - DC + DD;
       let crossF = null;
@@ -780,15 +724,40 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
         if (f0 > 0.001 && f0 < 0.999) crossF = f0;
       }
 
-      // Arrows
+      // Helper: arrowhead pointing to highest dot + label
+      function drawESSLine(f, label, color, dashed, labelY) {
+        const cx = xS(f);
+        // Find the highest payoff dot at this frequency and stop just above it
+        const highestDotY = Math.min(yS(payC(f)), yS(payD(f))); // min y = highest on screen
+        const aw = 7;                              // half-width of equilateral triangle
+        const ah = Math.round(aw * Math.sqrt(3)); // height ≈ 12px — equilateral
+        const arrowTip = highestDotY - 20;        // clear dot radius + small gap
+        // Downward-pointing equilateral triangle arrowhead only — no vertical line above it
+        dynG.append('polygon')
+          .attr('points', `${cx},${arrowTip+ah} ${cx-aw},${arrowTip} ${cx+aw},${arrowTip}`)
+          .attr('fill', color).attr('opacity', 0.7);
+        // Label: above-plot (labelY < 0) → just above plot top; inside-plot → at labelY
+        dynG.append('text')
+          .attr('x', cx).attr('y', labelY < 0 ? -14 : labelY)
+          .attr('text-anchor', 'middle')
+          .style('font-size','17px').style('font-family','Georgia,serif')
+          .attr('fill', color).attr('font-weight', '600')
+          .text(label);
+        // Dot at crossing point on x-axis
+        dynG.append('circle')
+          .attr('cx', cx).attr('cy', iH).attr('r', 5)
+          .attr('fill', color);
+      }
+
+      // Arrows below x-axis showing direction of selection
       const arrowRegions = crossF !== null ? [0, crossF, 1] : [0, 1];
       for (let i = 0; i < arrowRegions.length - 1; i++) {
         const mid  = (arrowRegions[i] + arrowRegions[i+1]) / 2;
         const cooperatorsRising = payC(mid) > payD(mid);
         const arrowX = xS(mid);
-        const arrowY = iH + 14;
-        const arrowDir = cooperatorsRising ? -1 : 1;
-        const dx = arrowDir * 14;
+        const arrowY = iH + 16;
+        const arrowDir = cooperatorsRising ? -1 : 1; // -1 = leftward = more cooperators
+        const dx = arrowDir * 13;
         dynG.append('line')
           .attr('x1', arrowX - dx*0.5).attr('x2', arrowX + dx*0.5)
           .attr('y1', arrowY).attr('y2', arrowY)
@@ -803,39 +772,23 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
           .attr('fill', cooperatorsRising ? '#4a7fa5' : '#b05a3a');
       }
 
-      // ESS markers
       if (crossF === null) {
+        // Dominant strategy — ESS at one endpoint
         const essF = payD(0) > payC(0) ? 0 : 1;
-        const essY = yS(Math.max(payC(essF), payD(essF)) + 0.3);
-        dynG.append('circle').attr('cx',xS(essF)).attr('cy',essY).attr('r',7).attr('fill','#1b1e23');
-        dynG.append('text').attr('x',xS(essF)).attr('y',essY-12).attr('text-anchor','middle')
-          .style('font-size','12px').style('font-family','Georgia,serif')
-          .attr('fill','#1b1e23').attr('font-weight','700').text('ESS');
+        const label = essF === 0 ? 'All Defect (ESS)' : 'All Cooperate (ESS)';
+        drawESSLine(essF, label, '#1b1e23', false, -38);
       } else {
         const stable = denom < 0;
-        const crossY = yS(payC(crossF));
         if (stable) {
-          dynG.append('circle').attr('cx',xS(crossF)).attr('cy',crossY).attr('r',7).attr('fill','#1b1e23');
-          dynG.append('text').attr('x',xS(crossF)).attr('y',crossY-12).attr('text-anchor','middle')
-            .style('font-size','12px').style('font-family','Georgia,serif')
-            .attr('fill','#1b1e23').attr('font-weight','700').text('ESS');
-          [0,1].forEach(ef => {
-            dynG.append('circle').attr('cx',xS(ef)).attr('cy',yS(Math.max(payC(ef),payD(ef))+0.1))
-              .attr('r',6).attr('fill','#fff').attr('stroke','#aaa').attr('stroke-width',1.5);
-          });
+          // Stable interior ESS
+          drawESSLine(crossF, 'Stable Equilibrium (ESS)', '#1b1e23', false, 2);
+          // Endpoints are unstable — no special marker needed
         } else {
-          dynG.append('circle').attr('cx',xS(crossF)).attr('cy',crossY)
-            .attr('r',7).attr('fill','#fff').attr('stroke','#888').attr('stroke-width',1.5);
-          dynG.append('text').attr('x',xS(crossF)).attr('y',crossY-12).attr('text-anchor','middle')
-            .style('font-size','12px').style('font-family','Georgia,serif')
-            .attr('fill','#888').attr('font-weight','700').text('unstable');
-          [0,1].forEach(ef => {
-            const ey = yS(Math.max(payC(ef),payD(ef))+0.1);
-            dynG.append('circle').attr('cx',xS(ef)).attr('cy',ey).attr('r',7).attr('fill','#1b1e23');
-            dynG.append('text').attr('x',xS(ef)).attr('y',ey-12).attr('text-anchor','middle')
-              .style('font-size','12px').style('font-family','Georgia,serif')
-              .attr('fill','#1b1e23').attr('font-weight','700').text('ESS');
-          });
+          // Unstable interior crossing + two stable endpoints
+          // Interior label sits just inside the plot top; endpoint labels sit just above it
+          drawESSLine(crossF, 'Unstable Equilibrium', '#999', true, 2);
+          drawESSLine(0, 'All Defect (ESS)', '#1b1e23', false, -38);
+          drawESSLine(1, 'All Cooperate (ESS)', '#1b1e23', false, -38);
         }
       }
     }
@@ -848,22 +801,22 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
     dynG.append('line').attr('x1',0).attr('x2',iW).attr('y1',iH).attr('y2',iH)
       .attr('stroke','#888').attr('stroke-width',1);
     dynG.append('g').call(d3.axisLeft(yS).tickValues([0,1,2,3,4,5]).tickFormat(d3.format('d')))
-      .selectAll('text').style('font-family','Georgia,serif').style('font-size','13px');
+      .selectAll('text').style('font-family','Georgia,serif').style('font-size','17px');
 
     // X labels
-    dynG.append('text').attr('x',xS(1)).attr('y',iH+20).attr('text-anchor','middle')
-      .style('font-family','Georgia,serif').style('font-size','12px')
+    dynG.append('text').attr('x',xS(1)).attr('y',iH+22).attr('text-anchor','middle')
+      .style('font-family','Georgia,serif').style('font-size','17px')
       .attr('fill','#888').attr('font-style','italic').text('All Cooperate');
-    dynG.append('text').attr('x',xS(0)).attr('y',iH+20).attr('text-anchor','middle')
-      .style('font-family','Georgia,serif').style('font-size','12px')
+    dynG.append('text').attr('x',xS(0)).attr('y',iH+22).attr('text-anchor','middle')
+      .style('font-family','Georgia,serif').style('font-size','17px')
       .attr('fill','#888').attr('font-style','italic').text('All Defect');
 
     // Axis titles
-    dynG.append('text').attr('x',iW/2).attr('y',iH+40).attr('text-anchor','middle')
-      .style('font-family','Georgia,serif').style('font-size','13px')
+    dynG.append('text').attr('x',iW/2).attr('y',iH+44).attr('text-anchor','middle')
+      .style('font-family','Georgia,serif').style('font-size','17px')
       .attr('fill','#555').attr('font-style','italic').text('Population Composition');
-    dynG.append('text').attr('transform','rotate(-90)').attr('x',-iH/2).attr('y',-38)
-      .attr('text-anchor','middle').style('font-family','Georgia,serif').style('font-size','13px')
+    dynG.append('text').attr('transform','rotate(-90)').attr('x',-iH/2).attr('y',-40)
+      .attr('text-anchor','middle').style('font-family','Georgia,serif').style('font-size','17px')
       .attr('fill','#555').attr('font-style','italic').text('Average payoff');
   }
 
@@ -924,9 +877,7 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
             drawDynamic(customPayoffs);
             // Update only the moved handle's position and label in place
             updateHandle(lockedKey, customPayoffs);
-            updateChartLabels(customPayoffs);
-            // Live-update the peer chart's dynamic layer too
-            if (peerDrawDynamic) peerDrawDynamic(customPayoffs);
+            updateBlurb(customPayoffs);
           })
           .on('end', function() {
             if (lockedKey) {
@@ -945,12 +896,15 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
         .attr('fill', h.color)
         .style('pointer-events','none');
 
-      // Payoff value label above the dot
+      // Payoff value label — to the left of left-side dots (f=1), right of right-side dots (f=0)
+      const labelOffset = 12; // px from dot edge
+      const onLeft = h.f === 1;
       handleG.append('text')
         .attr('class', `handle-label-${h.key}`)
-        .attr('x', cx).attr('y', cy - 11)
-        .attr('text-anchor', 'middle')
-        .style('font-family','Georgia,serif').style('font-size','11px')
+        .attr('x', cx + (onLeft ? -(7 + labelOffset) : (7 + labelOffset)))
+        .attr('y', cy + 5) // +5 to optically centre on dot
+        .attr('text-anchor', onLeft ? 'end' : 'start')
+        .style('font-family','Georgia,serif').style('font-size','14px')
         .attr('fill', h.color).attr('font-weight','600')
         .text(h.val);
     });
@@ -975,8 +929,12 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
 
     handleG.select(`.handle-${key}`)
       .attr('cx', cx).attr('cy', cy);
+    const onLeft = h.f === 1;
+    const labelOffset = 12;
     handleG.select(`.handle-label-${key}`)
-      .attr('x', cx).attr('y', cy - 11)
+      .attr('x', cx + (onLeft ? -(7 + labelOffset) : (7 + labelOffset)))
+      .attr('y', cy + 5)
+      .attr('text-anchor', onLeft ? 'end' : 'start')
       .text(payoffs[key]);
     // Also update hit area position
     handleG.selectAll('circle[data-key="' + key + '"]')
@@ -989,10 +947,9 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
   }
 
   draw(p);
-  // Expose drawDynamic so the peer chart can call it for live updates
-  el._drawDynamic = drawDynamic;
-  return draw; // caller can re-invoke with updated payoffs if needed
+  return draw;
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // CHART INSTANCES — stored so each can update the other
@@ -1017,147 +974,76 @@ function clampNoOverlap(rawVal, partnerVal, prevVal) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PAYOFF CHART (top — no ESS annotations)
+// PAYOFF CHART
 // ═══════════════════════════════════════════════════════════
 function renderPayoffChart(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  const H  = 240;
-  const mg = {top:30, right:24, bottom:48, left:52};
+  const H  = 280;
+  const mg = {top:52, right:36, bottom:56, left:58};
 
   function onPayoffChange(p) {
-    drawPayoffLines(el, p, H, mg, onPayoffChange, false);
-    const essEl = document.getElementById('ess-chart');
-    if (essEl && chartInstances['ess-chart']) {
-      drawPayoffLines(essEl, p, essEl._H, essEl._mg, chartInstances['ess-chart'].onPayoffChange, true);
-      // Re-wire peer after full redraw
-      wirePeers();
-    }
-    updateChartLabels(p);
+    drawPayoffLines(el, p, H, mg, onPayoffChange, essOn);
+    syncPillToPayoffs(p);
+    updateBlurb(p);
   }
 
   chartInstances[containerId] = { onPayoffChange };
-  drawPayoffLines(el, customPayoffs, H, mg, onPayoffChange, false);
+  drawPayoffLines(el, customPayoffs, H, mg, onPayoffChange, essOn);
 }
 
-// ═══════════════════════════════════════════════════════════
-// ESS CHART (bottom — with ESS annotations)
-// ═══════════════════════════════════════════════════════════
-function renderESSChart(containerId) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  const H  = 270;
-  const mg = {top:30, right:24, bottom:48, left:52};
-  el._H  = H;
-  el._mg = mg;
-
-  function onPayoffChange(p) {
-    drawPayoffLines(el, p, H, mg, onPayoffChange, true);
-    const pcEl = document.getElementById('payoff-chart');
-    if (pcEl && chartInstances['payoff-chart']) {
-      drawPayoffLines(pcEl, p, 240, {top:30, right:24, bottom:48, left:52}, chartInstances['payoff-chart'].onPayoffChange, false);
-      // Re-wire peer after full redraw
-      wirePeers();
-    }
-    updateChartLabels(p);
-  }
-
-  chartInstances[containerId] = { onPayoffChange };
-  drawPayoffLines(el, customPayoffs, H, mg, onPayoffChange, true);
+// Sync pill highlight and matrix to whichever game the current payoffs match
+function syncPillToPayoffs(p) {
+  const gameKey = identifyGame(p);
+  currentPillGame = gameKey;
+  document.querySelectorAll('.game-pill:not(.ess-pill)').forEach(b => {
+    b.classList.toggle('active', b.dataset.game === gameKey);
+  });
+  renderMatrix('matrix-main', gameKey, true);
 }
 
-// Wire each chart's _setDrawDynamic to point at the other chart's _drawDynamic
-function wirePeers() {
-  const pcEl  = document.getElementById('payoff-chart');
-  const essEl = document.getElementById('ess-chart');
-  if (pcEl && essEl) {
-    if (pcEl._setDrawDynamic && essEl._drawDynamic) pcEl._setDrawDynamic(essEl._drawDynamic);
-    if (essEl._setDrawDynamic && pcEl._drawDynamic) essEl._setDrawDynamic(pcEl._drawDynamic);
-  }
-}
-
-// Update all dynamic labels from current payoffs
-function updateChartLabels(p) {
-  const name = gameDisplayName(p);
-  const titleEl = document.getElementById('payoff-chart-title');
-  if (titleEl) titleEl.textContent = name;
-  const essTitle = document.getElementById('ess-chart-title');
-  if (essTitle) essTitle.textContent = name;
-  const annot = document.getElementById('ess-annotation');
-  if (annot) annot.innerHTML = essTextGame(p);
+// Update the description blurb below the chart
+function updateBlurb(p) {
+  const blurb = document.getElementById('game-description-blurb');
+  if (blurb) blurb.innerHTML = essOn ? essTextGame(p) : describeGame(p);
 }
 
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
 function init() {
-  // Static PD matrix at top of page
-  renderMatrix('matrix-pd', 'pd', true);
-
-  // Comparison matrix (game-switched)
-  renderMatrix('matrix-compare', currentGameCompare, true);
-  document.getElementById('matrix-description').innerHTML = GAMES[currentGameCompare].description;
-
-  // Tab buttons — comparison matrix
-  document.querySelectorAll('#game-tabs .game-tab').forEach(btn => {
+  // Pill buttons — load preset payoffs, update matrix + chart
+  document.querySelectorAll('.game-pill:not(.ess-pill)').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#game-tabs .game-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.game-pill:not(.ess-pill)').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      currentGameCompare = btn.dataset.game;
-      renderMatrix('matrix-compare', currentGameCompare, true);
-      document.getElementById('matrix-description').innerHTML = GAMES[currentGameCompare].description;
+      currentPillGame = btn.dataset.game;
+      const g = GAMES[currentPillGame];
+      customPayoffs = { CC: g.CC, CD: g.CD, DC: g.DC, DD: g.DD };
+      renderMatrix('matrix-main', currentPillGame, true);
+      renderPayoffChart('payoff-chart');
+      updateBlurb(customPayoffs);
     });
   });
 
-  // Payoff chart
+  // ESS toggle pill
+  const essBtn = document.getElementById('ess-toggle-btn');
+  essBtn.addEventListener('click', () => {
+    essOn = !essOn;
+    essBtn.textContent = essOn ? 'ESS On' : 'ESS Off';
+    essBtn.classList.toggle('ess-on', essOn);
+    renderPayoffChart('payoff-chart');
+    updateBlurb(customPayoffs);
+  });
+
+  // Initial render
+  renderMatrix('matrix-main', currentPillGame, true);
   renderPayoffChart('payoff-chart');
-  updateChartLabels(customPayoffs);
-
-  document.querySelectorAll('#game-tabs-chart .game-tab-small').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#game-tabs-chart .game-tab-small').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('#game-tabs-ess .game-tab-small').forEach(b => {
-        if (b.dataset.game === btn.dataset.game) b.classList.add('active');
-        else b.classList.remove('active');
-      });
-      btn.classList.add('active');
-      const g = GAMES[btn.dataset.game];
-      customPayoffs = { CC: g.CC, CD: g.CD, DC: g.DC, DD: g.DD };
-      renderPayoffChart('payoff-chart');
-      renderESSChart('ess-chart');
-      wirePeers();
-      updateChartLabels(customPayoffs);
-    });
-  });
-
-  // ESS chart
-  renderESSChart('ess-chart');
-  document.getElementById('ess-annotation').innerHTML = GAMES['pd'].ess;
-  wirePeers();
-
-  document.querySelectorAll('#game-tabs-ess .game-tab-small').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#game-tabs-ess .game-tab-small').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('#game-tabs-chart .game-tab-small').forEach(b => {
-        if (b.dataset.game === btn.dataset.game) b.classList.add('active');
-        else b.classList.remove('active');
-      });
-      btn.classList.add('active');
-      const g = GAMES[btn.dataset.game];
-      customPayoffs = { CC: g.CC, CD: g.CD, DC: g.DC, DD: g.DD };
-      renderPayoffChart('payoff-chart');
-      renderESSChart('ess-chart');
-      wirePeers();
-      updateChartLabels(customPayoffs);
-    });
-  });
+  updateBlurb(customPayoffs);
 
   window.addEventListener('resize', () => {
-    renderMatrix('matrix-pd', 'pd', true);
-    renderMatrix('matrix-compare', currentGameCompare, true);
+    renderMatrix('matrix-main', currentPillGame, true);
     renderPayoffChart('payoff-chart');
-    renderESSChart('ess-chart');
-    wirePeers();
   });
 }
 
@@ -1166,41 +1052,90 @@ function init() {
 // ═══════════════════════════════════════════════════════════
 const attempts = {};
 
+function updateQSliderStability(qid, val) {
+  const el = document.getElementById(qid + '_pq');
+  if (!el) return;
+  el.textContent = +val === 0 ? 'Unstable — populations diverge' : 'Stable — populations converge';
+}
+
 function updateQSliderFC(qid, val) {
   const el = document.getElementById(qid + '_pq');
   if (!el) return;
-  el.textContent = +val === 0
-    ? 'Defectors always win'
-    : 'Cooperators always win';
+  el.textContent = +val === 0 ? 'Defectors always win' : 'Cooperators always win';
+}
+
+function updateQSliderStarting(qid, val) {
+  const el = document.getElementById(qid + '_pq');
+  if (!el) return;
+  el.textContent = +val === 0 ? 'The starting frequency of cooperators' : 'The size of the payoff difference';
+}
+
+
+function updateQSliderCoop(qid, val) {
+  const el = document.getElementById(qid + '_pq');
+  if (!el) return;
+  el.textContent = +val === 0 ? 'Cooperate' : 'Defect';
 }
 
 const QUESTIONS = {
   q1_1: {
     correct: p => Math.abs(p - 0) < 0.01,
-    hint: 'Look at the payoff chart for the Prisoner\'s Dilemma. Switch to PD and move the slider from left to right — which line is always on top?',
-    explanation_correct: '✓ Correct! In the Prisoner\'s Dilemma, the defector payoff line lies entirely above the cooperator line for every value of fC. Defectors always earn more, so selection always pushes the population towards all-defection.',
-    explanation_wrong: '✗ The answer is: defectors always win. In the PD, defecting yields a higher payoff than cooperating regardless of how many cooperators are in the population — this is why defection is the dominant strategy and the only ESS.'
+    hint: 'Look at the payoff chart with the Prisoner\'s Dilemma loaded. Check both the left end (all defectors) and the right end (all cooperators) — which line is higher at both ends?',
+    explanation_correct: '✓ Correct! In the Prisoner\'s Dilemma, the defector payoff line lies entirely above the cooperator line at every population composition. Defectors always earn more — this is what makes defection a dominant strategy.',
+    explanation_wrong: '✗ Defectors always win in the Prisoner\'s Dilemma. The defector line lies above the cooperator line across the full range — defecting yields a higher payoff regardless of what others do.'
   },
-  q1_2: {
+  q1_2a: {
+    correct: p => Math.abs(p - 1) < 0.01,
+    hint: 'In the Prisoner\'s Dilemma, look at the right column of the payoff matrix — those are the payoffs when the recipient defects. Which row gives you a higher number: Cooperate or Defect?',
+    explanation_correct: '✓ Correct! When the recipient defects, DD = 1 beats CD = 0 — defecting is the better response. In the Prisoner\'s Dilemma, defection is always the best reply regardless of what your partner does.',
+    explanation_wrong: '✗ You should defect. When the recipient defects, DD = 1 > CD = 0, so defecting gives you a higher payoff than cooperating.'
+  },
+  q1_2b: {
     correct: p => Math.abs(p - 0) < 0.01,
-    hint: 'In Us vs. Them, the payoff lines cross at some interior frequency. Ask yourself: at a frequency just below the crossing, which line is higher? What does selection do in that region?',
-    explanation_correct: '✓ Correct! In Us vs. Them, the interior crossing is unstable. Below the crossing, defectors earn more and the population slides towards all-defection. Above it, cooperators earn more and the population climbs towards all-cooperation. The crossing is a tipping point — not a stable resting place.',
-    explanation_wrong: '✗ The crossing is unstable — the population drifts to all-defectors if it starts below it. In Stag Hunt, the best you can do depends entirely on what others do. Without enough cooperators already in the population, the cooperative equilibrium cannot be reached.'
+    hint: 'In Chicken, look at the right column of the payoff matrix. When the recipient defects, which row gives you a higher payoff?',
+    explanation_correct: '✓ Correct! In Chicken, CD = 1 > DD = 0 — cooperating is the better response when your partner defects. This is what makes Chicken different from the Prisoner\'s Dilemma: backing down is better than a mutual crash.',
+    explanation_wrong: '✗ You should cooperate. In Chicken, CD = 1 > DD = 0 when the recipient defects — cooperating beats the catastrophe of mutual defection.'
+  },
+  q1_2c: {
+    correct: p => Math.abs(p - 1) < 0.01,
+    hint: 'In Staghunt, look at the right column. When the recipient defects, which row has the higher payoff?',
+    explanation_correct: '✓ Correct! In Staghunt, DD = 1 > CD = 0 when the recipient defects — defecting gives the higher payoff. If your partner won\'t hunt the stag, you\'re better off hunting hares alone.',
+    explanation_wrong: '✗ You should defect. In Staghunt, DD = 1 > CD = 0 — if your partner defects, defecting yourself yields a higher payoff than trying to cooperate alone.'
+  },
+  q1_2d: {
+    correct: p => Math.abs(p - 0) < 0.01,
+    hint: 'In Mutualism, look at the right column. When the recipient defects, which row has the higher payoff?',
+    explanation_correct: '✓ Correct! In Mutualism, CD = 3 > DD = 0 when the recipient defects — cooperating is still the better choice even when your partner doesn\'t. Cooperation is a dominant strategy here.',
+    explanation_wrong: '✗ You should cooperate. In Mutualism, CD = 3 > DD = 0 — cooperating gives a higher payoff than defecting even when your partner defects.'
   },
   q1_3: {
     correct: p => Math.abs(p - 1) < 0.01,
-    hint: 'In Chicken, what happens when fC is just above the crossing point? Which strategy earns more there? Does selection push the frequency up or down?',
-    explanation_correct: '✓ Correct! In Chicken, the crossing is a stable ESS. Above the crossing cooperators earn less — selection reduces cooperator frequency back down. Below the crossing defectors earn less — selection increases cooperator frequency back up. The population is pulled towards the crossing from both sides.',
-    explanation_wrong: '✗ The crossing in Chicken is stable. Unlike the Stag Hunt, any perturbation away from the crossing triggers selection that returns the population to it. This makes the mixed equilibrium a true ESS.'
+    hint: 'With ESS on and Chicken loaded, look at the arrows below the x-axis near the crossing. Do they point toward the crossing or away from it?',
+    explanation_correct: '✓ Correct! In Chicken the crossing is a stable ESS. The arrows on both sides point toward it — above the crossing cooperators earn less and frequency falls back; below it defectors earn less and frequency rises. The population converges to the crossing from either side.',
+    explanation_wrong: '✗ The crossing in Chicken is stable. The arrows both point inward toward the crossing — any perturbation triggers selection that pushes the population back. This is what makes it a true ESS.'
+  },
+  q1_4: {
+    correct: p => Math.abs(p - 0) < 0.01,
+    hint: 'In Staghunt, the unstable crossing is a tipping point. Think about what happens to a population that starts just below it versus just above it — what is it that determines which side of that line the population is on?',
+    explanation_correct: '✓ Correct! In Staghunt, the unstable interior crossing is a tipping point: populations starting below it drift to all-defectors, and populations starting above it climb to all-cooperators. The starting frequency of cooperators determines which basin of attraction the population falls into — payoff values shift where the tipping point sits, but cannot choose the outcome on their own.',
+    explanation_wrong: '✗ It is the starting frequency of cooperators that determines the outcome. The unstable crossing divides the two basins of attraction. A population that begins with more cooperators than the crossing frequency will evolve to all-cooperation; one that begins below it will collapse to all-defection. The payoffs determine where the tipping point sits, but the starting condition determines which side of it the population is on.'
   }
 };
 
 function checkAnswer(qid) {
-  const block  = document.getElementById(qid);
-  const slider = block.querySelector('.q-slider');
-  const fb     = document.getElementById(qid + '_fb');
-  const p      = parseFloat(slider.value);
-  const q      = QUESTIONS[qid];
+  // Find the feedback element, then walk back to find the nearest slider
+  const fb = document.getElementById(qid + '_fb');
+  if (!fb) return;
+  // The slider is in the .q-slider-row immediately before the button before the feedback
+  // Walk back through siblings to find the .q-slider
+  let el = fb.previousElementSibling; // button
+  if (el) el = el.previousElementSibling; // q-slider-row div
+  const slider = el ? el.querySelector('.q-slider') : null;
+  if (!slider) return;
+
+  const p = parseFloat(slider.value);
+  const q = QUESTIONS[qid];
+  if (!q) return;
 
   if (!attempts[qid]) attempts[qid] = 0;
   attempts[qid]++;
