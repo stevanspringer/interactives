@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CODE BREAKER: BIOANALYSIS SURVIVAL SYSTEM v1.0</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #000000;   /* \e[40m black */
+  color: #c0c0c0;         /* \e[37m white — default after \e[37;40m setup */
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow: hidden;
+}
+
+#terminal {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 24px 12px;
+  max-width: 940px;
+  margin: 0 auto;
+}
+
+#output {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+#output::-webkit-scrollbar { width: 4px; }
+#output::-webkit-scrollbar-track { background: transparent; }
+#output::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+.line {
+  white-space: pre;
+  min-height: 1.6em;
+  display: block;
+}
+
+/* ── Exact ANSI colour mapping ───────────────────────────── */
+/* \e[37m  white  */ .wh { color: #c0c0c0; }
+/* \e[32m  green  */ .g  { color: #00cc00; }
+/* \e[36m  cyan   */ .cy { color: #00cccc; }
+/* \e[33m  yellow */ .ye { color: #cccc00; }
+/* \e[31m  red    */ .re { color: #cc0000; }
+/* \e[34m  blue   */ .bl { color: #5555ff; }
+
+/* ── Input area ──────────────────────────────────────────── */
+#input-area {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #1a1a1a;
+  padding-top: 10px;
+  margin-top: 4px;
+  gap: 6px;
+  min-height: 36px;
+}
+
+#input-prefix {
+  color: #c0c0c0;   /* white — matches \e[37m prompt context */
+  flex-shrink: 0;
+  white-space: pre;
+}
+
+#user-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #00cccc;   /* \e[36m cyan — matches \e[36m\n before user input */
+  font-family: inherit;
+  font-size: 14px;
+  caret-color: #00cc00;
+  text-transform: uppercase;
+}
+
+#user-input::placeholder { color: #333; text-transform: none; }
+
+/* ── CRT scanlines ───────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(0,0,0,0.07) 3px,
+    rgba(0,0,0,0.07) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#skip-hint {
+  position: fixed;
+  bottom: 54px;
+  right: 24px;
+  color: #2a2a2a;
+  font-size: 11px;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<div id="terminal">
+  <div id="output"></div>
+  <div id="input-area">
+    <span id="input-prefix"></span>
+    <input type="text" id="user-input" autocomplete="off" autocorrect="off"
+           autocapitalize="characters" spellcheck="false" disabled>
+  </div>
+</div>
+
+<div id="skip-hint">[any key = skip typing]</div>
+
+<script>
+// ================================================================
+// ALIEN BIOCHEMISTRY
+// ================================================================
+
+const ALIEN_CODE = {
+  UU:'Z', VU:'L', WU:'E', XU:'S', YU:'Q', ZU:'A',
+  UV:'W', VV:'Z', WV:'G', XV:'D', YV:'A', ZV:'Y',
+  UW:'M', VW:'B', WW:'Z', XW:'A', YW:'K', ZW:'J',
+  UX:'P', VX:'F', WX:'A', XX:'Z', YX:'O', ZX:'C',
+  UY:'T', VY:'A', WY:'U', XY:'I', YY:'Z', ZY:'V',
+  UZ:'A', VZ:'R', WZ:'H', XZ:'N', YZ:'X', ZZ:'Z'
+};
+
+const START_CODONS = new Set(['UZ','VY','WX','XW','YV','ZU']);
+const FUNCTIONAL_DNA = 'UWVXYUYWZUWUZXXUWVZUYXYZUVWVXVWYXUZVXUYWVXYZUXVUZZUVXVZUYXVUXVVWUV';
+const TARGET_PROTEIN  = 'AMVLVNAIVFKGLWEKAFKD';
+
+const ADJECTIVES = [
+  'epistatic','linked','independent','null','co-dominant','dominant','recessive',
+  'pleiotropic','random','statistically-significant','particulate','mendelian',
+  'ribosomal','deoxyribonucleic','darwinian','quantitative','continuous','discrete',
+  'probable','transcribed','translated','chromosomal','related','mitotic','meiotic',
+  'encoded','p2+2pq+q2','homozygous','heterozygous','sickled','chi-squared',
+  'peptide-bonded','genomic','mathematical','independently-segregated','heritable',
+  'inherited','inbred','structured','conserved','mutant','replicated','phylogenetic',
+  'monohybrid','polymorphic','allelic','lethal','deleterious','advantageous',
+  'runningoutofgeneticswords','xray-diffracted','folded','helical','polymeric',
+  'multi-locus','single-locus','inverted','duplicated','deleted','nonsynonymous',
+  'synonymous','noncoding','coding','5-prime','3-prime','N-terminal','C-terminal',
+  'lactose-intolerant','high-altitude-adapted','malaria-resistant','untranslated',
+  'regulatory','catalytic','evolved','selected','3:1','9:3:3:1','pedigreed'
+];
+
+// ================================================================
+// TRANSLATION ENGINE  (exact mirror of Perl logic)
+// ================================================================
+
+function translate(raw) {
+  const dna = raw.toUpperCase().replace(/\s/g, '');
+
+  if (!dna) return { error: 'No sequence entered.', protein: '', hitStop: false };
+
+  for (const c of dna) {
+    if (!'UVWXYZ'.includes(c)) {
+      // \e[31m red error \e[32m back to green
+      return { error: `Can not translate: Unrecognized Nucleotide ${c}. Use only UVWXYZ.`, protein: '', hitStop: false };
+    }
+  }
+
+  const codingBases = [...dna];
+
+  while (codingBases.length > 1) {
+    const p1 = codingBases.shift();
+    const p2 = codingBases.shift();
+    const codon = p1 + p2;
+
+    if (START_CODONS.has(codon)) {
+      const frameCodons = [codon];
+      while (codingBases.length > 1) {
+        frameCodons.push(codingBases.shift() + codingBases.shift());
+      }
+      let protein = '';
+      let hitStop = false;
+      for (const fc of frameCodons) {
+        const aa = ALIEN_CODE[fc];
+        if (aa === 'Z') { hitStop = true; break; }
+        protein += aa;
+      }
+      return { error: null, protein, hitStop };
+    } else {
+      codingBases.unshift(p2);
+    }
+  }
+
+  return { error: 'Can not translate: No start codons. Try mutating the functional sequence.', protein: '', hitStop: false };
+}
+
+// ================================================================
+// TERMINAL ENGINE
+// ================================================================
+
+const outputEl = document.getElementById('output');
+const inputEl  = document.getElementById('user-input');
+const prefixEl = document.getElementById('input-prefix');
+
+let skipTyping  = false;
+let awaitInput  = false;
+let inputResolve = null;
+
+function scrollBot() { outputEl.scrollTop = outputEl.scrollHeight; }
+
+// ── Render a line from segments: [{text, cls}] ─────────────────
+function renderSegs(segs) {
+  const div = document.createElement('div');
+  div.className = 'line';
+  for (const s of segs) {
+    if (!s.text) continue;
+    const span = document.createElement('span');
+    if (s.cls) span.className = s.cls;
+    span.textContent = s.text;
+    div.appendChild(span);
+  }
+  outputEl.appendChild(div);
+  scrollBot();
+}
+
+// ── Print a SINGLE-colour line (with optional typewriter) ──────
+function print(text, cls = 'wh', instant = false) {
+  return new Promise(resolve => {
+    const div = document.createElement('div');
+    div.className = `line ${cls}`;
+    outputEl.appendChild(div);
+    scrollBot();
+
+    if (instant || text === '' || skipTyping) {
+      div.textContent = text;
+      resolve();
+      return;
+    }
+
+    let i = 0;
+    const delay = Math.max(4, Math.floor(550 / Math.max(text.length, 1)));
+
+    const tick = () => {
+      if (skipTyping) { div.textContent = text; resolve(); return; }
+      div.textContent = text.slice(0, ++i);
+      scrollBot();
+      if (i < text.length) setTimeout(tick, delay);
+      else resolve();
+    };
+    setTimeout(tick, 30);
+  });
+}
+
+// Instant helpers
+const pi    = (t, c='wh') => print(t, c, true);
+const blank = ()           => pi('');
+
+// \e[37m  80-char dashes
+const sep   = () => pi('-'.repeat(80), 'wh');
+// \e[32m  80-char equals
+const sepG  = () => pi('='.repeat(80), 'g');
+// \e[37m  80-char equals  (win screen)
+const sepW  = () => pi('='.repeat(80), 'wh');
+
+// ── Print MIXED-colour line instantly ──────────────────────────
+// segs: [ [text, cls], ... ]   cls omitted = inherit body default
+function mix(...segs) {
+  renderSegs(segs.map(([text, cls]) => ({ text, cls: cls || '' })));
+  return Promise.resolve();
+}
+
+// ================================================================
+// INPUT HELPERS
+// ================================================================
+
+function _arm(resolve) {
+  awaitInput   = true;
+  inputResolve = resolve;
+  inputEl.disabled = false;
+  inputEl.focus();
+}
+
+// Wait for bare Enter (press-enter screens)
+function waitEnter(prompt = '[PRESS ENTER TO CONTINUE]') {
+  return new Promise(async resolve => {
+    await pi(prompt, 'wh');          // prompts are always \e[37m white
+    prefixEl.textContent = '';
+    inputEl.placeholder  = '↵';
+    _arm(resolve);
+  });
+}
+
+// Wait for text input
+function waitText(prompt, pfx = '') {
+  return new Promise(async resolve => {
+    if (prompt) await pi(prompt, 'wh');  // white prompt
+    prefixEl.textContent = pfx;
+    inputEl.placeholder  = '';
+    _arm(resolve);
+  });
+}
+
+// Key handler
+document.addEventListener('keydown', e => {
+  if (!awaitInput && e.key !== 'Enter') skipTyping = true;
+
+  if (awaitInput && e.key === 'Enter') {
+    const val = inputEl.value.trim().toUpperCase();
+    inputEl.value    = '';
+    inputEl.disabled = true;
+    prefixEl.textContent = '';
+    awaitInput = false;
+
+    if (val) pi(`> ${val}`, 'cy');   // echo typed input in cyan
+    blank();
+
+    if (inputResolve) { const r = inputResolve; inputResolve = null; r(val); }
+  }
+});
+
+document.addEventListener('click', () => { if (!inputEl.disabled) inputEl.focus(); });
+
+// ================================================================
+// HALL OF FAME
+// ================================================================
+
+function hofLoad() {
+  try { return JSON.parse(localStorage.getItem('cb_hof') || '[]'); }
+  catch { return []; }
+}
+
+function hofSave(entry) {
+  const hof = hofLoad();
+  hof.push(entry);
+  hof.sort((a,b) => a.trials !== b.trials ? a.trials-b.trials : a.seconds-b.seconds);
+  localStorage.setItem('cb_hof', JSON.stringify(hof.slice(0,20)));
+  return hof;
+}
+
+// HOF table is in \e[37m white context
+async function showHOF(hof) {
+  await pi('~'.repeat(80), 'wh');
+  await pi('TRIALS\tSECONDS\tNAME', 'wh');
+  for (const e of hof.slice(0,10)) {
+    await pi(`${e.trials}\t${e.seconds}\t${e.name}`, 'wh');
+  }
+  await pi('~'.repeat(80), 'wh');
+}
+
+// ================================================================
+// GAME FLOW
+// ================================================================
+
+let playerName   = '';
+let trialHistory = [];   // { trial, seq, result, win }
+
+// ── SCREEN 1: Title ────────────────────────────────────────────
+async function runIntro() {
+  await blank();
+  await blank();
+  await blank();
+  // \e[37;40m context: white on black
+  await pi('-'.repeat(80), 'wh');
+  // \e[33m yellow title, \e[37m back to white
+  await mix(['CODE BREAKER: ENGINEERING FOOD ON AN ALIEN WORLD           STEVAN SPRINGER(2018)', 'ye']);
+  await pi('-'.repeat(80), 'wh');
+  await blank();
+  // ASCII art in white (\e[37m context)
+  await pi('      _               *      |                   *              .-.         *   ', 'wh');
+  await pi('     (_)                    /^\\                          ____ +     + ____      ', 'wh');
+  await pi('                 *          | |                         (____:_______:____)     ', 'wh');
+  await pi('                            |_|      *                        +     +           ', 'wh');
+  await pi('       *            *      /___\\                               " - "            ', 'wh');
+  await pi('                 :         |=  |              ~~                               *', 'wh');
+  await pi('                (")        | _ |            ~~~~~~      ~                       ', 'wh');
+  await pi('  :         -)o-/ \\-o     /|[_]|\\          ~~~\\/~~~    ~~~             *        ', 'wh');
+  await pi(' [X]            \\_/      / | H | \\          ~~||~~    ~~|~~                     ', 'wh');
+  await pi('..|.............d b......\\/..H..\\/............||........|.......................', 'wh');
+  await blank();
+  // \e[36m cyan story text
+  await print('You are a scientist lost on an alien world.', 'cy');
+  await print('You are light years from home. You are tired. You need food.', 'cy');
+  await print('A tracking beacon leads you to a mysterious electronic device.', 'cy');
+  await blank();
+  // \e[37m white separator + prompt
+  await pi('-'.repeat(80), 'wh');
+
+
+  await waitEnter('[PRESS ENTER TO START THE MYSTERIOUS DEVICE]');
+}
+
+// ── SCREEN 2: Name input ───────────────────────────────────────
+async function runName() {
+  await blank();
+  await blank();
+  await blank();
+  // \e[32m green
+  await sepG();
+  await print('WELCOME TO BIOANALYSIS SURVIVAL SYSTEM - v1.0', 'g');
+  await blank();
+  await print('What should bioanalysis survival system call you?', 'g');
+  await sep();   // \e[37m white
+  const raw = await waitText('[TYPE YOUR NAME AND PRESS ENTER]');
+  playerName = (raw || 'STRANGER');
+}
+
+// ── Shared "Analyzing..." header ───────────────────────────────
+async function analyzing() {
+  await blank();
+  await blank();
+  await blank();
+  await sepG();                       // \e[32m ================
+  await mix(['Analyzing...', 're']);  // \e[31m red
+}
+
+// ── SCREENS 3-7: Narrative ─────────────────────────────────────
+async function runStory() {
+
+  // Screen 3
+  await analyzing();
+  await mix(['My circuits detect that organism ', 'g'], [playerName, 'cy'], [' requires nutrition.', 'g']);
+  await mix(['Organic molecules on this planet may not be compatible with ', 'g'], [playerName, 'cy'], ['.', 'g']);
+  await mix(['I will need to analyze the biochemistry of ', 'g'], [playerName, 'cy'], [' to advise.', 'g']);
+  await sep();
+  await waitEnter('[PRESS ENTER TO LET THE DEVICE TAKE A TISSUE SAMPLE]');
+
+  // Screen 4
+  await analyzing();
+  await mix(['I detect your biochemistry has ', 'g'], ['DNA     ...  4 NUCLEOTIDES', 'cy'], ['.', 'g']);
+  await mix(['I detect your biochemistry has ', 'g'], ['PROTEIN ... 20 AMINO ACIDS', 'cy'], ['.', 'g']);
+  await mix(['Your chemistry is ', 'g'], ['INCOMPATIBLE', 're'], [' with life on this planet.', 'g']);
+  await mix([`I'm sorry `, 'g'], [playerName, 'cy'], ['. You will die. ', 'g'], ['Have a nice day!', 'ye']);
+  await sep();
+  await waitEnter("[PRESS ENTER TO ASK THE DEVICE IF THERE'S ANYTHING YOU CAN DO]");
+
+  // Screen 5
+  await analyzing();
+  await mix(['The life on this planet has ', 'g'], ['DNA     ...  6 NUCLEOTIDES', 'cy'], ['.', 'g']);
+  await mix(['The life on this planet has ', 'g'], ['PROTEIN ... 25 AMINO ACIDS', 'cy'], ['.', 'g']);
+  await print("Eating amino acids that you can't metabolize could poison you.", 'g');
+  await mix([`I'm sorry `, 'g'], [playerName, 'cy'], ['. If you eat the protein here you will die. ', 'g'], ['Have a nice day!', 'ye']);
+  await sep();
+  await waitEnter('[PRESS ENTER TO ASK THE DEVICE IF YOU COULD ENGINEER A COMPATIBLE PROTEIN]');
+
+  // Screen 6
+  await analyzing();
+  await print('Yes. 20 of the 25 amino acids here are also found in your earth proteins.', 'g');
+  await print('You could engineer an alien protein that uses only those 20 amino acids.', 'g');
+  await mix(['But to do that, you would need to know the ', 'g'], ['GENETIC CODE', 'cy'], ['.', 'g']);
+  await mix([`I'm sorry `, 'g'], [playerName, 'cy'], ['. You came all this way just to die. ', 'g'], ['Have a nice day!', 'ye']);
+  await sep();
+  await waitEnter('[PRESS ENTER ASK THE DEVICE IF IT KNOWS THE CODE]');
+
+  // Screen 7
+  await analyzing();
+  await print('No. I am a BIOANALYSIS SURVIVAL SYSTEM v1.0', 'g');
+  await print('Code breaking functionality was introduced in BIOANALYSIS SURVIVAL SYSTEM v1.1', 'g');
+  await print("I can read the DNA, and I can make the proteins, but I can't break the code.", 'g');
+  await mix([`I'm sorry `, 'g'], [playerName, 'cy'], ['. Unless you are a ', 'g'], ['CODE BREAKER', 'cy'], [' you will die. ', 'g'], ['Have a nice day!', 'ye']);
+  await sep();
+  await waitEnter('[PRESS ENTER TO TELL THE DEVICE THAT YOU ARE A CODE BREAKER]');
+
+  // Screen 8
+  await analyzing();
+  await mix(["Oh! You're a ", 'g'], ['CODE BREAKER', 'cy'], ["! That's good news for you ", 'g'], [playerName, 'cy'], ['.', 'g']);
+  await print('If you can figure out the code, I can make you an edible protein.', 'g');
+  await blank();
+  await print('Here is a list of what I can do:', 'g');
+  await mix(['  - I have one example of a ', 'g'], ['FUNCTIONAL DNA', 'cy'], [' sequence from this planet.', 'g']);
+  await mix(['  - I can make ', 'g'], ['ANY MUTATION', 'cy'], [' of DNA from this planet.', 'g']);
+  await mix(['  - I can ', 'g'], ['TRANSLATE DNA', 'cy'], [' from this planet into ', 'g'], ['PROTEIN', 'cy'], ['.', 'g']);
+  await sep();
+  await waitEnter('[PRESS ENTER TO DISPLAY THE FUNCTIONAL ALIEN SEQUENCE]');
+}
+
+// ── SCREEN 9: Show functional sequence + first translation ─────
+async function runFirstTranslation() {
+  await analyzing();
+  await mix(['On this planet DNA has ', 'g'], ['6 NUCLEOTIDES (UVWXYZ)', 'cy'], ['.', 'g']);
+  await mix(['On this planet protein has ', 'g'], ['25 AMINO ACIDS (ABCDEFGHIJKLMNOPQRSTUVWXY)', 'cy'], ['.', 'g']);
+  await blank();
+  // \e[33m ALIEN DNA \e[32m
+  await mix(['The ', 'g'], ['ALIEN DNA', 'ye'], [' including untranslated regions is:', 'g']);
+  // \e[36m DNA sequence
+  await pi(FUNCTIONAL_DNA, 'cy');
+  await blank();
+  // \e[33m ALIEN PROTEIN \e[32m
+  await mix(['The ', 'g'], ['ALIEN PROTEIN', 'ye'], [' made by this DNA sequence is:', 'g']);
+  // translate() prints \e[36m protein \e[32m
+  const fRes = translate(FUNCTIONAL_DNA);
+  await pi(fRes.protein + (fRes.hitStop ? ' *' : ''), 'cy');
+
+  // \e[37m white separator + white prompts
+  await sep();
+  await pi('[THE FUNCTIONAL ALIEN DNA SEQUENCE: IS IN THE OTHER WINDOW AS A TEXT FILE]', 'wh');
+  await pi('[MAKE A SECOND COPY OF THE ALIEN DNA SEQUENCE AND MAKE MUTATIONS TO THE COPY]', 'wh');
+  await pi('[MUTATIONS CAN BE ANYTHING: SUBSTITUTION, INSERTION, DELETION, INVERSION, ETC]', 'wh');
+  // \e[36m cyan prompt — this one is cyan in the original!
+  await pi('[TRY PUTTING AN ALIEN DNA SEQUENCE INTO THE BIOANALYSIS SYSTEM TO TRANSLATE IT]', 'cy');
+
+  // User input (terminal is in \e[36m cyan at this point)
+  const seq = await waitText('', '');
+  await blank();
+
+  // \e[32m green === + Analyzing header
+  await analyzing();
+  await print('The translated protein sequence is >>>', 'g');
+  const r = translate(seq || '');
+  if (r.error) {
+    await pi(r.error, 're');   // \e[31m red
+  } else {
+    await pi(r.protein || '[no coding sequence found]', 'cy');  // \e[36m cyan
+  }
+  await blank();
+
+  // Lab intro in same screen (original continues from here)
+  await mix([playerName, 'cy'], [' you are ready. To survive, just make an edible earth protein.', 'g']);
+  await print('Albumin is an edible protein from eggs with 385 Amino Acids.', 'g');
+  await print('First use logic to crack the alien genetic code by making and testing mutations.', 'g');
+  await print('Then give BIOANALYSIS SYSTEM alien DNA that encodes this fragment of Albumin:', 'g');
+  // \e[36m cyan target protein
+  await pi(TARGET_PROTEIN, 'cy');
+  await blank();
+  // \e[31;36m — red then cyan = cyan wins
+  await mix(['Figure it out with the fewest tries to go in the ', 'g'], ['HALL OF FAME!', 'cy']);
+  await sep();   // \e[37m white
+  await waitEnter("[PRESS ENTER WHEN YOU'RE READY TO GET CRACKING!]");
+}
+
+// ── SCREEN 10: Main lab loop ────────────────────────────────────
+async function runLab() {
+  const startTime = Date.now();
+  let trial = 0;
+
+  while (true) {
+    trial++;
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+
+    await blank();
+    await blank();
+    await blank();
+    await sepG();   // \e[32m green ================
+    await pi(`Trial ${trial}. Elapsed time: ${elapsed} of your '${adj}' Earth seconds.`, 'g');
+    await pi('Ready to analyze...', 'g');
+    await sep();   // \e[37m white ----------------
+    // \e[37m white prompt, then \e[36m sets cyan for user input
+    await pi('[ENTER AN ALIEN DNA SEQUENCE TO TRANSLATE IT INTO ALIEN PROTEIN]', 'wh');
+
+    const seq = await waitText('', '');   // user types in cyan (per CSS)
+    await blank();
+
+    // \e[32m >>> \e[36m (green >>>, then cyan for protein)
+    await pi('>>>', 'g');
+    const r = translate(seq || '');
+    if (r.error) {
+      await pi(r.error, 're');   // \e[31m red
+    } else {
+      await pi(r.protein || '[no coding sequence found]', 'cy');   // \e[36m cyan
+    }
+
+    // Record attempt
+    const win = r.protein === TARGET_PROTEIN;
+    trialHistory.push({ trial, seq, result: r.error ? r.error : (r.protein || '[no coding sequence]'), win });
+
+    if (win) {
+      const seconds = Math.floor((Date.now() - startTime) / 1000);
+      await runWin(trial, seconds);
+      return;
+    }
+  }
+}
+
+// ── WIN SCREEN ─────────────────────────────────────────────────
+async function runWin(trials, seconds) {
+  await blank();
+  await blank();
+  await blank();
+  // \e[37m white === on win screen (NOT green — this is exact from original)
+  await sepW();
+  // \e[33m YOU DID IT! \e[32m
+  await mix(['YOU DID IT!', 'ye']);
+  await print(`You cracked the alien genetic code in ${trials} trials and ${seconds} of your Earth seconds.`, 'g');
+  // "$name you have earned your place in the...\n\n\e[33mHALL OF FAME!\e[37m"
+  await mix([playerName, 'cy'], [' you have earned your place in the...', 'g']);
+  await blank();
+  await mix(['HALL OF FAME!', 'ye']);   // \e[33m yellow
+  // \e[37m white from here on
+  await pi('~'.repeat(80), 'wh');
+  await pi('TRIALS\tSECONDS\tNAME', 'wh');
+  await pi(`${trials}\t${seconds}\t${playerName}`, 'wh');
+  await blank();
+
+  const hof = hofSave({ name: playerName, trials, seconds });
+  await showHOF(hof);   // white
+
+  await blank();
+  // Win ASCII art — all \e[37m white
+  await pi('         :                                         ', 'wh');
+  await pi("      o (\") o  but I like my eggs with ketchup...  ", 'wh');
+  await pi('    ___\\/_\\/___                                    ', 'wh');
+  await pi("   /    (%)    \\                                   ", 'wh');
+  await blank();
+  await pi('-'.repeat(80), 'wh');
+  await mix(['[THE LEGENDARY ', 'wh'], [playerName, 'cy'], [' WILL BE REMEMBERED FOREVER IN THE HALL OF FAME', 'wh']);
+  await blank();
+
+  // ── Attempt history ────────────────────────────────────────
+  await pi('='.repeat(80), 'wh');
+  await pi('ATTEMPT HISTORY', 'ye');
+  await pi('='.repeat(80), 'wh');
+  await blank();
+  const seqW  = 46;   // column width for sequence
+  const hdr   = 'TRIAL'.padEnd(7) + 'SEQUENCE'.padEnd(seqW) + 'PROTEIN';
+  await pi(hdr, 'wh');
+  await pi('-'.repeat(80), 'wh');
+  await pi('This is a list of all your trials, can you see where you learned the different', 'g');
+  await mix(['features of the alien ', 'g'], ['GENETIC CODE', 'cy'], ['?', 'g']);
+  await blank();
+  for (const h of trialHistory) {
+    const num     = String(h.trial).padEnd(7);
+    const seqTrim = h.seq.length > seqW - 1 ? h.seq.slice(0, seqW - 4) + '...' : h.seq;
+    const seqCol  = seqTrim.padEnd(seqW);
+    const displayResult = h.result.replace('. Try mutating the functional sequence.', '');
+    if (h.win) {
+      await mix([num, 'wh'], [seqCol, 'cy'], [displayResult, 'ye']);
+    } else {
+      renderSegs([{ text: num, cls: 'wh' }, { text: seqCol, cls: 'cy' }, { text: displayResult, cls: 'g' }]);
+    }
+  }
+  await blank();
+  await pi('-'.repeat(80), 'wh');
+  await blank();
+  await waitEnter('[PRESS ENTER TO PLAY AGAIN]');
+  location.reload();
+}
+
+// ================================================================
+// START
+// ================================================================
+
+async function main() {
+  await new Promise(r => setTimeout(r, 300));
+  await runIntro();
+  await runName();
+  await runStory();
+  await runFirstTranslation();
+  await runLab();
+}
+
+main().catch(err => {
+  const div = document.createElement('div');
+  div.className = 'line re';
+  div.textContent = `SYSTEM ERROR: ${err.message}`;
+  outputEl.appendChild(div);
+  console.error(err);
+});
+</script>
+</body>
+</html>

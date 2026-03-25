@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>Virulence and Transmission</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+
+<style>
+  :root { color-scheme: light only; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff !important; overflow-x: hidden; }
+  body {
+    background: #fff !important;
+    color: #1b1e23;
+    font-family: Georgia, serif;
+    font-size: 18px;
+    line-height: 1.6;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+  h1  { font-size: 2em; font-weight: 700; line-height: 1.15; margin-bottom: 0.1em; }
+  h2  { font-size: 1.3em; font-weight: 700; margin: 2.2em 0 0.5em; }
+  h3  { font-size: 1.05em; font-weight: 600; margin: 1.4em 0 0.3em; font-style: italic; }
+  p   { margin-bottom: 0.9em; }
+  em  { font-style: italic; }
+  strong { font-weight: 600; }
+  hr  { border: none; border-top: 1px solid #e8e8e8; margin: 2em 0; }
+
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px;
+    background: #ddd; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: #1b1e23; cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 0 0 1.5px #1b1e23;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%; background: #1b1e23;
+    cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #1b1e23;
+  }
+
+  .btn {
+    display: inline-block; padding: 6px 20px; font-family: Georgia,serif;
+    font-size: 0.95em; background: #1b1e23; color: white; border: none;
+    border-radius: 4px; cursor: pointer; margin: 0.2em 0 0.6em;
+  }
+  .btn:hover { background: #333; }
+
+  .viz { margin: 0.5em 0 1.2em; display: block; }
+  svg  { display: block; width: 100%; overflow: visible; }
+
+  /* ── SIX-PANEL SIM ─────────────────────────── */
+  .sim-outer  { margin: 0.6em 0 0; border: 1px solid #e8e8e8; }
+  .sim-panels { display: flex; }
+
+  .sim-panel {
+    flex: 1; position: relative; overflow: hidden;
+    border-right: 1px solid #e8e8e8;
+    cursor: pointer;
+  }
+  .sim-panel:last-child { border-right: none; }
+  canvas.sim-canvas { display: block; }
+
+  /* ── MODE TOGGLE ────────────────────────────── */
+  .mode-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 1.2em;
+  }
+  .mode-row .btn { margin: 0; vertical-align: middle; }
+  .mode-pill {
+    font-family: Georgia, serif; font-size: 0.95em; font-style: italic;
+    color: #fff; background: #888; border: none; border-radius: 4px;
+    padding: 6px 20px; cursor: pointer; white-space: nowrap;
+    transition: background 0.15s; vertical-align: middle;
+  }
+  .mode-pill:hover { background: #666; }
+  .mode-pill.auto  { background: #e07b39; }
+  .mode-pill.auto:hover { background: #c96a2a; }
+  .mode-desc {
+    font-size: 0.88em; color: #555; font-style: italic;
+  }
+
+  /* Cooperator-frequency strip at bottom of each panel */
+  .sim-strip { height: 5px; background: #f0f0f0; }
+  .sim-fill  { height: 100%; background: #4a7fa5; transition: width 0.25s; }
+
+  /* Extinct overlay */
+  .sim-extinct {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-family: Georgia,serif;
+    color: #bbb; font-style: italic;
+    background: rgba(252,252,252,0.92);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s;
+  }
+  .sim-extinct.show { opacity: 1; }
+
+  .legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin: 0.4em 0 0.2em; font-size: 0.95em; color: #555;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot  { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── QUESTIONS ─────────────────────────────── */
+  .questions    { font-size: 0.95em; margin: 1.5em 0 1em; }
+  .question-block {
+    margin-bottom: 1.4em; padding: 0.8em 1em;
+    border-left: 3px solid #e8e8e8; background: #fafafa;
+  }
+  .question-block p { margin-bottom: 0.5em; }
+  .q-options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 0.7em; }
+  .q-option  { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; font-size: 0.95em; color: #333; line-height: 1.4; }
+  .q-option input[type=radio] { margin-top: 3px; flex-shrink: 0; accent-color: #1b1e23; }
+  .q-btn {
+    display: inline-block; padding: 5px 16px; font-family: Georgia,serif;
+    font-size: 0.88em; background: #1b1e23; color: white; border: none;
+    border-radius: 4px; cursor: pointer; margin-bottom: 0.5em;
+  }
+  .q-btn:hover { background: #333; }
+  .q-feedback {
+    font-size: 0.92em; line-height: 1.5; min-height: 1.4em; padding: 0.4em 0;
+  }
+  .q-feedback.correct { color: #2a7a3b; }
+  .q-feedback.hint    { color: #8a6800; }
+  .q-feedback.wrong   { color: #b33000; }
+
+  /* ── NAVIGATION ────────────────────────────── */
+  .nav-table  { width: 100%; border-collapse: collapse; margin-top: 4em; font-size: 0.92em; }
+  .nav-table td { padding: 0; vertical-align: top; }
+  .nav-table .nav-prev { width: 35%; text-align: left; }
+  .nav-table .nav-home { width: 30%; text-align: center; }
+  .nav-table .nav-next { width: 35%; text-align: right; }
+  .nav-table a { color: #1b1e23; text-decoration: none; font-style: italic; }
+  .nav-table a:hover { text-decoration: underline; }
+  .nav-label {
+    font-size: 0.82em; color: #aaa; text-transform: uppercase;
+    letter-spacing: 0.05em; display: block; margin-bottom: 2px;
+  }
+  footer { margin-top: 4em; font-size: 0.95em; color: #aaa; font-style: italic; }
+  footer a { color: #aaa; }
+</style>
+</head>
+<body>
+
+<h1>Virulence and Transmission</h1>
+<h3>Why pathogens are not always as harmful as they could be.</h3>
+<hr>
+
+<h2>The Virulence–Transmission Trade-off</h2>
+
+<p>A pathogen that kills its host quickly gains nothing if it never reaches a new one. This is the central tension of <strong>virulence evolution</strong>: within any infected host, the most rapidly replicating strains outcompete slower ones — but strains that destroy the host too fast lose access to future hosts. The key question is whether the evolutionary interests of pathogen strains <em>within</em> a host are aligned with what is best for transmission <em>between</em> hosts.</p>
+
+<p>This tension maps directly onto the logic of <strong>multilevel selection</strong>. Each infected host is a group. <strong>Blue</strong> strains are <em>mild</em> — they replicate at a moderate rate, leave the host functional, and support sustained transmission. <strong>Orange</strong> strains are <em>virulent</em> — they replicate faster within the host, outcompeting mild strains, but drive the host to collapse before transmission can occur. Within any single host, virulent strains always win the within-host competition. But hosts carrying only virulent strains die without transmitting, while hosts with mild strains survive and keep spreading the pathogen.</p>
+
+<p>Whether mild strains persist in the pathogen population depends on which force is stronger: <strong>within-host competition</strong>, which always favours virulence, or <strong>between-host selection</strong>, which favours mild strains that preserve the host. The outcome depends critically on the relative rates of virulence and transmission.</p>
+
+<hr>
+
+<h2>Two Forces, One Pathogen Population</h2>
+
+<p><strong>Virulence</strong> sets the rate at which virulent strains spread within a host, converting mild-strain infections into virulent ones. High virulence means rapid within-host competitive exclusion: mild strains are swept out before the host can transmit them.</p>
+
+<p><strong>Transmission</strong> sets the rate at which strains move between hosts. Low transmission keeps hosts isolated — within-host selection dominates, and virulence wins everywhere. High transmission constantly shuffles strains between hosts, mixing their compositions and erasing the between-host differences that allow mild strains to persist as a class. Intermediate transmission allows mild strains to colonise newly available hosts while preserving enough between-host variation for between-host selection to act.</p>
+
+<p>When a host reaches carrying capacity and carries only virulent strains, it collapses — the virulent strains have exhausted the host. Hosts carrying mild strains remain stable at carrying capacity. Periodically, a virulent strain is introduced into a fully mild host population, restarting the within-host competition. Collapsed hosts are eventually recolonised by mild strains transmitted from surviving hosts.</p>
+
+<hr>
+
+<h2>Simulation</h2>
+
+<p>Six hosts run simultaneously, each starting with all mild strains. <strong>Blue</strong> dots are mild strains, <strong>orange</strong> dots are virulent strains. Both replicate with logistic growth — birth rate slows as the host approaches carrying capacity. Each step, virulent strains spread within the host by converting mild strains at virulence rate <em>s</em>. At transmission rate <em>t</em>, strains move at random between hosts. When virulence fixes in a host at carrying capacity, it collapses. Mild hosts are stable. Collapsed hosts can only be recolonised by transmission from surviving hosts. In <strong>Automatic</strong> mode, a single virulent strain is introduced into a fully-mild host once all virulent strains have been lost; in <strong>Manual</strong> mode, click a fully-mild host to introduce one yourself.</p>
+
+<p>The <strong>thin grey lines</strong> in the chart track mild-strain frequency in each host. The <strong>bold blue line</strong> shows the global frequency across all hosts combined.</p>
+
+<h3>Drag in the field below to set s and t — do mild strains persist?</h3>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#4a7fa5"></div>Mild strain</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#e07b39"></div>Virulent strain</div>
+</div>
+
+<div class="sim-outer">
+  <div class="sim-panels" id="sim-panels"></div>
+</div>
+
+<table style="border-collapse:collapse; border-spacing:0; width:100%; margin:0.5em 0 0.4em; table-layout:fixed;">
+  <tr style="vertical-align:top;">
+    <td style="padding:0 12px 0 0; width:240px; overflow:hidden;">
+      <div id="xy-pad-svg" style="display:block;"></div>
+    </td>
+    <td style="padding:0; overflow:hidden;">
+      <div id="timeline-svg" style="display:block;"></div>
+    </td>
+  </tr>
+</table>
+<div class="mode-row">
+  <button class="btn" id="btn-restart">Restart</button>
+  <button class="mode-pill" id="btn-mode">Manual</button>
+  <span class="mode-desc" id="mode-desc">Click a fully-mild host to introduce a virulent strain.</span>
+</div>
+
+<hr>
+
+<h2>Questions</h2>
+
+<div class="questions">
+
+  <div class="question-block" id="q1">
+    <p><strong>Q1.</strong> <em>Set <strong>transmission to zero</strong> and virulence to a high rate. What eventually happens to every host — and do all hosts collapse at the same time?</em></p>
+    <div class="q-options">
+      <label class="q-option"><input type="radio" name="q1" value="0"> Every host eventually collapses, but at different times.</label>
+      <label class="q-option"><input type="radio" name="q1" value="1"> All hosts collapse simultaneously.</label>
+    </div>
+    <button class="q-btn" onclick="checkQ('q1')">Check Answer</button>
+    <div class="q-feedback" id="q1_fb"></div>
+  </div>
+
+  <div class="question-block" id="q2">
+    <p><strong>Q2.</strong> <em>Now add a <strong>low transmission rate</strong>. Do mild strains persist longer globally, compared to zero transmission? Why?</em></p>
+    <div class="q-options">
+      <label class="q-option"><input type="radio" name="q2" value="0"> Yes — mild strains transmit from stable hosts into collapsing ones, slowing the global takeover.</label>
+      <label class="q-option"><input type="radio" name="q2" value="1"> No — transmission has no effect on the global outcome.</label>
+    </div>
+    <button class="q-btn" onclick="checkQ('q2')">Check Answer</button>
+    <div class="q-feedback" id="q2_fb"></div>
+  </div>
+
+  <div class="question-block" id="q3">
+    <p><strong>Q3.</strong> <em>Set transmission to <strong>very high</strong>. What happens to the composition of different hosts — and what does this mean for mild strains globally?</em></p>
+    <div class="q-options">
+      <label class="q-option"><input type="radio" name="q3" value="0"> Hosts become similar to one another — between-host variation disappears, and virulence wins globally.</label>
+      <label class="q-option"><input type="radio" name="q3" value="1"> Hosts diverge from one another — between-host selection strengthens, and mild strains win globally.</label>
+    </div>
+    <button class="q-btn" onclick="checkQ('q3')">Check Answer</button>
+    <div class="q-feedback" id="q3_fb"></div>
+  </div>
+
+  <div class="question-block" id="q4">
+    <p><strong>Q4.</strong> <em>After a virulent strain enters a fully-mild host, what determines whether mild strains can <strong>survive within that host</strong> long enough to transmit before being competitively excluded?</em></p>
+    <div class="q-options">
+      <label class="q-option"><input type="radio" name="q4" value="0"> The virulence rate — low virulence gives mild strains more time to be transmitted before they are swept out.</label>
+      <label class="q-option"><input type="radio" name="q4" value="1"> The number of hosts — more hosts means mild strains are less likely to be lost.</label>
+      <label class="q-option"><input type="radio" name="q4" value="2"> The starting frequency — mild strains survive if they begin at high frequency in the host.</label>
+    </div>
+    <button class="q-btn" onclick="checkQ('q4')">Check Answer</button>
+    <div class="q-feedback" id="q4_fb"></div>
+  </div>
+
+  <div class="question-block" id="q5">
+    <p><strong>Q5.</strong> <em>What combination of virulence and transmission gives mild strains the best chance of persisting? Is there a <strong>sweet spot</strong> for transmission, or does maximising it always help?</em></p>
+    <div class="q-options">
+      <label class="q-option"><input type="radio" name="q5" value="0"> Zero transmission and low virulence — isolation prevents virulent strains from spreading.</label>
+      <label class="q-option"><input type="radio" name="q5" value="1"> Low virulence and intermediate transmission — enough flow to rescue hosts, enough isolation to preserve between-host differences.</label>
+      <label class="q-option"><input type="radio" name="q5" value="2"> Maximum transmission and low virulence — more transmission always helps mild strains spread.</label>
+    </div>
+    <button class="q-btn" onclick="checkQ('q5')">Check Answer</button>
+    <div class="q-feedback" id="q5_fb"></div>
+  </div>
+
+  <div class="question-block" id="q6">
+    <p><strong>Q6.</strong> <em>In nature, many pathogens transmit <strong>before</strong> causing serious harm to the host. What does the model suggest about why this pattern is so common?</em></p>
+    <div class="q-options">
+      <label class="q-option"><input type="radio" name="q6" value="0"> Strains that transmit before destroying the host can seed new hosts before virulent strains complete within-host takeover — so between-host selection favours early, mild transmission.</label>
+      <label class="q-option"><input type="radio" name="q6" value="1"> Rapid transmission always favours the most virulent strains, which spread most efficiently.</label>
+    </div>
+    <button class="q-btn" onclick="checkQ('q6')">Check Answer</button>
+    <div class="q-feedback" id="q6_fb"></div>
+  </div>
+
+</div>
+
+<table class="nav-table">
+  <tr>
+    <td class="nav-prev"></td>
+    <td class="nav-home"><span class="nav-label">Course</span><a href="index.html">Index</a></td>
+    <td class="nav-next"></td>
+  </tr>
+</table>
+
+<footer>Virulence and Transmission<br>Stevan Springer · UPEI Biology · <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></footer>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const N_GROUPS = 6;
+const N_TARGET = 50;   // soft population cap per group
+const PANEL_H  = 106;  // canvas height in px
+const DOT_R    = 4;
+const SPD      = 0.55;
+const COL_C    = '#4a7fa5';
+const COL_S    = '#e07b39';
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let withinRate    = 0.3;
+let migrationRate = 0.015;
+let virulentInterval = 100;  // 0 = manual click; 100 = auto inject every 100 steps
+let virulentAuto     = true; // tracks toggle state
+
+let groups  = [];   // groups[g] = array of {type:'C'|'S', x, y, vx, vy}
+let extinct = [];   // boolean per group
+let stepN   = 0;
+let simTimer = null;
+
+// Timeline data
+let timeArr = [];
+let gFreqs  = [];   // gFreqs[g] = array of mild-strain frequencies
+let globalFreq = [];
+
+// ═══════════════════════════════════════════════════════════
+// PANEL CONSTRUCTION
+// ═══════════════════════════════════════════════════════════
+function buildPanels() {
+  const wrap = document.getElementById('sim-panels');
+  wrap.innerHTML = '';
+  for (let g = 0; g < N_GROUPS; g++) {
+    const div = document.createElement('div');
+    div.className = 'sim-panel';
+    div.id = `panel-${g}`;
+
+    const cv = document.createElement('canvas');
+    cv.className = 'sim-canvas';
+    cv.id = `cv-${g}`;
+    cv.height = PANEL_H;
+    div.appendChild(cv);
+
+    const strip = document.createElement('div');
+    strip.className = 'sim-strip';
+    const fill = document.createElement('div');
+    fill.className = 'sim-fill';
+    fill.id = `fill-${g}`;
+    fill.style.width = '50%';
+    strip.appendChild(fill);
+    div.appendChild(strip);
+
+    const ext = document.createElement('div');
+    ext.className = 'sim-extinct';
+    ext.id = `ext-${g}`;
+    ext.textContent = 'collapsed';
+    div.appendChild(ext);
+
+    wrap.appendChild(div);
+
+    // Click to manually inject/reseed when auto-rate is zero
+    div.addEventListener('click', () => onPanelClick(g));
+  }
+}
+
+function panelW(g) {
+  const p = document.getElementById(`panel-${g}`);
+  return p ? p.clientWidth : 100;
+}
+
+// ═══════════════════════════════════════════════════════════
+// INDIVIDUAL FACTORY
+// ═══════════════════════════════════════════════════════════
+function mkIndiv(type, g) {
+  const W = panelW(g);
+  const a = Math.random() * Math.PI * 2;
+  return {
+    type,
+    x:  DOT_R + Math.random() * (W  - 2*DOT_R),
+    y:  DOT_R + Math.random() * (PANEL_H - 2*DOT_R),
+    vx: Math.cos(a) * SPD,
+    vy: Math.sin(a) * SPD,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT POPULATION
+// ═══════════════════════════════════════════════════════════
+function initPop() {
+  extinct = Array(N_GROUPS).fill(false);
+  groups  = [];
+  gFreqs  = Array.from({length: N_GROUPS}, () => []);
+  globalFreq = [];
+  timeArr = [];
+  stepN   = 0;
+  for (let g = 0; g < N_GROUPS; g++) {
+    const grp = [];
+    for (let i = 0; i < N_TARGET; i++) {
+      grp.push(mkIndiv('C', g));  // all mild
+    }
+    groups.push(grp);
+    document.getElementById(`ext-${g}`).classList.remove('show');
+    document.getElementById(`fill-${g}`).style.width = '100%';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// DRAW A SINGLE GROUP
+// ═══════════════════════════════════════════════════════════
+function drawGroup(g) {
+  const cv = document.getElementById(`cv-${g}`);
+  if (!cv) return;
+  const W = panelW(g);
+  cv.width = W;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, PANEL_H);
+  if (extinct[g]) return;
+  for (const d of groups[g]) {
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, DOT_R, 0, Math.PI * 2);
+    ctx.fillStyle = d.type === 'C' ? COL_C : COL_S;
+    ctx.fill();
+  }
+}
+
+function setFill(g) {
+  const fill = document.getElementById(`fill-${g}`);
+  if (!fill) return;
+  const n  = groups[g].length;
+  const nC = n > 0 ? groups[g].reduce((s,d) => s + (d.type==='C'?1:0), 0) : 0;
+  fill.style.width = n > 0 ? Math.round(nC/n*100) + '%' : '0%';
+}
+
+// ═══════════════════════════════════════════════════════════
+// POISSON SAMPLER  (Knuth; fast for small λ)
+// ═══════════════════════════════════════════════════════════
+function pois(λ) {
+  if (λ <= 0) return 0;
+  // Normal approximation for large λ
+  if (λ > 30) return Math.max(0, Math.round(λ + Math.sqrt(λ) * (Math.random()*2-1) * 1.4));
+  let L = Math.exp(-λ), k = 0, p = 1;
+  do { k++; p *= Math.random(); } while (p > L);
+  return k - 1;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIMULATION STEP
+// Each tick handles:
+//   1. Movement (bounce off walls)
+//   2. Within-host selection: virulent strains convert mild ones
+//   3. Replication: logistic birth, offspring inherit parent type
+//   4. Extinction: all-virulent host at capacity collapses
+//   5. Migration: strains move at random between hosts
+// ═══════════════════════════════════════════════════════════
+function simStep() {
+  const live = [];
+  for (let g = 0; g < N_GROUPS; g++) if (!extinct[g]) live.push(g);
+
+  for (const g of live) {
+    const grp = groups[g];
+    if (grp.length === 0) continue;
+    const W = panelW(g);
+
+    // 1. Move & wall bounce
+    for (const d of grp) {
+      d.x += d.vx; d.y += d.vy;
+      if (d.x < DOT_R)        { d.x = DOT_R;        d.vx =  Math.abs(d.vx); }
+      if (d.x > W   - DOT_R)  { d.x = W   - DOT_R;  d.vx = -Math.abs(d.vx); }
+      if (d.y < DOT_R)        { d.y = DOT_R;         d.vy =  Math.abs(d.vy); }
+      if (d.y > PANEL_H-DOT_R){ d.y = PANEL_H-DOT_R; d.vy = -Math.abs(d.vy); }
+    }
+
+    // Count types
+    let nS = 0;
+    for (const d of grp) if (d.type === 'S') nS++;
+    const nC = grp.length - nS;
+
+    // 2. Within-host selection: each virulent strain produces conversion events
+    // converting mild strains at withinRate per step.
+    if (nS > 0 && nC > 0) {
+      const λ = nS * withinRate * 0.06;
+      const nConv = Math.min(nC, pois(λ));
+      // Pick nConv distinct cooperators to convert
+      let converted = 0;
+      for (let tries = 0; tries < grp.length * 2 && converted < nConv; tries++) {
+        const idx = Math.floor(Math.random() * grp.length);
+        if (grp[idx].type === 'C') {
+          grp[idx].type = 'S';
+          converted++;
+        }
+      }
+    }
+
+    // 3. Replication: logistic birth rate — slows as group approaches N_TARGET
+    // r_max * (1 - n/K) gives net per-capita growth; birth rate floored at 0
+    const r_max = 0.06;
+    const logisticRate = Math.max(0, r_max * (1 - grp.length / N_TARGET));
+    const nBirths = pois(grp.length * logisticRate);
+    for (let b = 0; b < nBirths; b++) {
+      const parent = grp[Math.floor(Math.random() * grp.length)];
+      const child  = mkIndiv(parent.type, g);
+      child.x = Math.max(DOT_R, Math.min(W-DOT_R,   parent.x + (Math.random()-0.5)*8));
+      child.y = Math.max(DOT_R, Math.min(PANEL_H-DOT_R, parent.y + (Math.random()-0.5)*8));
+      grp.push(child);
+    }
+
+    // 4. Extinction: all-virulent host at carrying capacity collapses.
+    const nCfinal = grp.reduce((s,d) => s + (d.type==='C'?1:0), 0);
+    if (nCfinal === 0 && grp.length >= N_TARGET) {
+      extinct[g] = true;
+      groups[g]  = [];
+      document.getElementById(`ext-${g}`).classList.add('show');
+    }
+  }
+
+  // 5. Migration
+  if (migrationRate > 0 && live.length > 0) {
+    // Total migrants per step drawn from Poisson
+    const totalPop = live.reduce((s,g) => s + groups[g].length, 0);
+    const nMig = pois(migrationRate * totalPop * 0.04);
+
+    for (let m = 0; m < nMig; m++) {
+      // Pick a random non-empty live source group
+      const fromG = live[Math.floor(Math.random() * live.length)];
+      if (groups[fromG].length < 3) continue;
+
+      // Destination: any other group (may be extinct → triggers refounding)
+      const toG = Math.floor(Math.random() * N_GROUPS);
+      if (toG === fromG) continue;
+
+      // Remove migrant from source
+      const idx     = Math.floor(Math.random() * groups[fromG].length);
+      const migrant = { ...groups[fromG].splice(idx, 1)[0], ...mkPos(toG) };
+
+      // Refound extinct group if needed
+      if (extinct[toG]) {
+        extinct[toG] = false;
+        groups[toG]  = [];
+        document.getElementById(`ext-${toG}`).classList.remove('show');
+      }
+      groups[toG].push(migrant);
+    }
+  }
+
+  stepN++;
+
+  // Record frequencies every 10 steps
+  if (stepN % 10 === 0) {
+    let totalC = 0, totalN = 0;
+    for (let g = 0; g < N_GROUPS; g++) {
+      const n  = groups[g].length;
+      const nC = groups[g].reduce((s,d) => s+(d.type==='C'?1:0), 0);
+      gFreqs[g].push(n > 0 ? nC/n : 0);
+      totalC += nC; totalN += n;
+    }
+    timeArr.push(stepN);
+    const gFreqNow = totalN > 0 ? totalC/totalN : 0;
+    globalFreq.push(gFreqNow);
+    updateTimeline();
+
+    // Auto virulent injection: only when no virulent strains remain anywhere
+    if (virulentInterval > 0 && stepN % virulentInterval === 0 && gFreqNow >= 1) {
+      injectVirulent();
+    }
+  }
+
+  // Draw all panels
+  for (let g = 0; g < N_GROUPS; g++) {
+    drawGroup(g);
+    setFill(g);
+  }
+}
+
+function mkPos(g) {   // just a random position + velocity for a group
+  const W = panelW(g), a = Math.random() * Math.PI * 2;
+  return {
+    x: DOT_R + Math.random() * (W - 2*DOT_R),
+    y: DOT_R + Math.random() * (PANEL_H - 2*DOT_R),
+    vx: Math.cos(a) * SPD,
+    vy: Math.sin(a) * SPD,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// INJECTION / RESEEDING HELPERS
+// ═══════════════════════════════════════════════════════════
+function injectVirulent(targetG) {
+  if (targetG !== undefined) {
+    // Click path: inject into a specific fully-mild host
+    if (!extinct[targetG] && groups[targetG].length >= N_TARGET &&
+        groups[targetG].every(d => d.type === 'C')) {
+      groups[targetG].push(mkIndiv('S', targetG));
+    }
+    return;
+  }
+  // Auto path: pick a random fully-mild host at capacity
+  const candidates = [];
+  for (let g = 0; g < N_GROUPS; g++) {
+    if (!extinct[g] && groups[g].length >= N_TARGET &&
+        groups[g].every(d => d.type === 'C')) candidates.push(g);
+  }
+  if (candidates.length > 0) {
+    const target = candidates[Math.floor(Math.random() * candidates.length)];
+    groups[target].push(mkIndiv('S', target));
+  }
+}
+
+// Panel click: inject virulent strain manually when in manual mode
+function onPanelClick(g) {
+  if (!virulentAuto && !extinct[g] &&
+      groups[g].length >= N_TARGET &&
+      groups[g].every(d => d.type === 'C')) {
+    injectVirulent(g);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// TIMELINE
+// ═══════════════════════════════════════════════════════════
+const TLM = {top:14, right:16, bottom:44, left:40};
+const TLH = 240;
+let tlG, tlXS, tlYS, tlXAx, gPaths, gblPath;
+
+function buildTimeline() {
+  const el = document.getElementById('timeline-svg');
+  const W  = el.getBoundingClientRect().width || el.clientWidth || 280;
+  const iW = W - TLM.left - TLM.right;
+  const iH = TLH - TLM.top - TLM.bottom;
+  d3.select(el).selectAll('*').remove();
+
+  const svg = d3.select(el).append('svg').attr('width', W).attr('height', TLH)
+    .style('font-family','Georgia,serif').style('font-size','18px');
+  tlG = svg.append('g').attr('transform', `translate(${TLM.left},${TLM.top})`);
+
+  tlXS = d3.scaleLinear().domain([0, 700]).range([0, iW]);
+  tlYS = d3.scaleLinear().domain([0, 1]).range([iH, 0]);
+
+  tlG.append('g')
+    .call(d3.axisLeft(tlYS).tickValues([0, 1]).tickFormat(d => d))
+    .call(g => g.select('.domain').remove())
+    .call(g => g.selectAll('.tick line').clone()
+      .attr('x2', iW).attr('stroke','#eee').attr('stroke-dasharray','3,2'));
+
+  tlXAx = tlG.append('g')
+    .attr('transform', `translate(0,${iH})`)
+    .call(d3.axisBottom(tlXS).ticks(6));
+
+  tlG.append('text')
+    .attr('transform', `translate(-26,${iH/2}) rotate(-90)`)
+    .attr('text-anchor','middle').style('font-size','18px').attr('fill','#555')
+    .text('Frequency');
+  tlG.append('text')
+    .attr('x', iW/2).attr('y', iH+38)
+    .attr('text-anchor','middle').style('font-size','18px').attr('fill','#555')
+    .text('Time');
+
+  // Group paths (thin grey) — drawn first so global overlays them
+  gPaths = [];
+  for (let g = 0; g < N_GROUPS; g++) {
+    gPaths.push(tlG.append('path').attr('fill','none')
+      .attr('stroke','#ccc').attr('stroke-width',1.5).attr('opacity',0.9));
+  }
+  // Global path (bold blue)
+  gblPath = tlG.append('path').attr('fill','none')
+    .attr('stroke', COL_C).attr('stroke-width', 3);
+}
+
+function updateTimeline() {
+  if (!tlG || timeArr.length < 2) return;
+  const maxT = Math.max(700, timeArr[timeArr.length-1]);
+  tlXS.domain([0, maxT]);
+  tlXAx.call(d3.axisBottom(tlXS).ticks(6));
+  const lineGen = d3.line()
+    .x((d, i) => tlXS(timeArr[i]))
+    .y(d => tlYS(d))
+    .curve(d3.curveBasis);
+  for (let g = 0; g < N_GROUPS; g++) {
+    if (gFreqs[g].length >= 2) gPaths[g].attr('d', lineGen(gFreqs[g]));
+  }
+  if (globalFreq.length >= 2) gblPath.attr('d', lineGen(globalFreq));
+}
+
+// ═══════════════════════════════════════════════════════════
+// START / RESTART
+// ═══════════════════════════════════════════════════════════
+function startSim() {
+  if (simTimer) { simTimer.stop(); simTimer = null; }
+  initPop();
+  buildTimeline();
+  simTimer = d3.timer(simStep);
+}
+
+// ═══════════════════════════════════════════════════════════
+// XY PAD  (virulence s on Y, transmission t on X, both 0→1)
+// ═══════════════════════════════════════════════════════════
+let padS = 0.30;   // virulence   s ∈ [0, 1]  (y-axis, up = high)
+let padT = 0.15;   // transmission t ∈ [0, 1]  (x-axis, right = high)
+
+function applyPadValues() {
+  // Logarithmic mapping: log(1 + 9x) / log(10) gives fine control at low values
+  const logScale = x => x <= 0 ? 0 : Math.log(1 + 9 * x) / Math.log(10);
+  withinRate    = logScale(padS) * 0.5;
+  migrationRate = logScale(padT) * 0.05;
+}
+
+function buildPad() {
+  const el = document.getElementById('xy-pad-svg');
+  if (!el) return;
+  d3.select(el).selectAll('*').remove();
+
+  const SIZE = 240;
+  const ml = 36, mr = 10, mt = 10, mb = 44;
+  const pw = SIZE - ml - mr;   // plot area width
+  const ph = SIZE - mt - mb;   // plot area height
+
+  const svg = d3.select(el).append('svg')
+    .attr('width', SIZE).attr('height', SIZE)
+    .style('font-family', 'Georgia,serif')
+    .style('font-size', '18px')
+    .style('display', 'block')
+    .style('cursor', 'crosshair');
+
+  const g = svg.append('g').attr('transform', `translate(${ml},${mt})`);
+
+  const xS = d3.scaleLinear().domain([0, 1]).range([0, pw]);
+  const yS = d3.scaleLinear().domain([0, 1]).range([ph, 0]);
+
+  // No tick labels — live values shown in axis titles instead
+
+  // Axis titles — live-updating with current s and t values
+  const xTitle = g.append('text')
+    .attr('x', pw / 2).attr('y', ph + 38)
+    .attr('text-anchor', 'middle')
+    .style('font-size', '18px')
+    .attr('fill', '#555');
+
+  const yTitle = g.append('text')
+    .attr('transform', `translate(-22,${ph / 2}) rotate(-90)`)
+    .attr('text-anchor', 'middle')
+    .style('font-size', '18px')
+    .attr('fill', '#555');
+
+  // Diagonal line from (0,0) to (1,1) — same style as border
+  g.append('line')
+    .attr('x1', xS(0)).attr('y1', yS(0))
+    .attr('x2', xS(1)).attr('y2', yS(1))
+    .attr('stroke', '#ccc').attr('stroke-width', 1);
+
+  // Border
+  g.append('rect')
+    .attr('x', 0).attr('y', 0).attr('width', pw).attr('height', ph)
+    .attr('fill', 'none').attr('stroke', '#ccc').attr('stroke-width', 1);
+
+  // Crosshair lines (dashed)
+  const chX = g.append('line')
+    .attr('stroke', '#ccc').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+  const chY = g.append('line')
+    .attr('stroke', '#ccc').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+
+  // Dot
+  const dot = g.append('circle')
+    .attr('r', 7)
+    .attr('fill', '#1b1e23')
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 2.5);
+
+  function updatePadPos() {
+    const cx = xS(padT);
+    const cy = yS(padS);
+    dot.attr('cx', cx).attr('cy', cy);
+    chX.attr('x1', cx).attr('y1', 0).attr('x2', cx).attr('y2', ph);
+    chY.attr('x1', 0).attr('y1', cy).attr('x2', pw).attr('y2', cy);
+    xTitle.text('Transmission (' + padT.toFixed(2) + ')');
+    yTitle.text('Virulence (' + padS.toFixed(2) + ')');
+  }
+
+  updatePadPos();
+
+  // Drag
+  svg.call(d3.drag().on('start drag', function(event) {
+    const [ex, ey] = d3.pointer(event, g.node());
+    padT = Math.max(0, Math.min(1, xS.invert(ex)));
+    padS = Math.max(0, Math.min(1, yS.invert(ey)));
+    applyPadValues();
+    updatePadPos();
+  }));
+}
+
+document.getElementById('btn-restart').addEventListener('click', startSim);
+
+// ═══════════════════════════════════════════════════════════
+// QUESTION SYSTEM
+// ═══════════════════════════════════════════════════════════
+const attempts = {};
+
+const QS = {
+  q1: {
+    ok:   v => v === '0',
+    hint: 'With no transmission, can mild strains in one host influence what happens in another? What is the only force operating inside each isolated host?',
+    yes:  '✓ Correct. With zero transmission, each host evolves independently under within-host selection alone — which always favours virulent strains. Every host eventually collapses, but the timing depends on when a virulent strain was introduced into each host. Collapses are staggered, not synchronised.',
+    no:   '✗ They collapse at different times. Isolated hosts all lose their mild strains eventually, but the timing of virulent strain introduction and competitive exclusion varies between hosts. There is no mechanism to synchronise collapses.',
+  },
+  q2: {
+    ok:   v => v === '0',
+    hint: 'Mild hosts are full-sized and stable. Which type of host contributes more transmitted strains — and what strain type dominates a stable host?',
+    yes:  '✓ Correct. Stable, mild hosts are at carrying capacity and contribute more transmitted strains than collapsing ones — and those strains are enriched for mild variants. This is between-host selection: mild hosts have higher transmission output, and that advantage slows or reverses the global rise of virulence.',
+    no:   '✗ Low transmission does help. Stable mild hosts produce more transmitted strains, and those strains carry the mild phenotype into hosts where virulence is spreading. Without any transmission, hosts cannot rescue each other.',
+  },
+  q3: {
+    ok:   v => v === '0',
+    hint: 'If strains shuffle between hosts constantly, what happens to the composition of each individual host — does it stay distinctive, or converge toward the global average?',
+    yes:  '✓ Correct. Very high transmission constantly shuffles strains between hosts, driving all hosts toward the same composition. When hosts no longer differ from each other, there is no between-host variation for between-host selection to act on. The dynamics collapse to simple within-host competition — where virulence always wins. Maintaining between-host differences is the key requirement for multilevel selection to sustain mildness.',
+    no:   '✗ High transmission makes hosts more alike. Constant mixing erases compositional differences between hosts. Without variation between hosts, between-host selection disappears and only within-host dynamics — always favouring virulence — remain.',
+  },
+  q4: {
+    ok:   v => v === '0',
+    hint: 'Think about what the virulence rate controls inside a single host. After a virulent strain enters, how much time do mild strains have before they are swept out — and what determines that window?',
+    yes:  '✓ Correct. The virulence rate determines how quickly virulent strains outcompete mild ones within a host. When virulence is low, mild strains persist in the host for longer, giving them more opportunities to be transmitted to other hosts before they are eliminated. High virulence shortens this window so severely that mild strains are swept out before they can escape — making their elimination at the within-host level inevitable and fast.',
+    no:   '✗ The key factor is the virulence rate. It controls the pace of within-host competitive exclusion — how quickly mild strains are replaced after a virulent strain arrives. The number of hosts affects the population-level dynamics but not what happens inside any individual host.',
+  },
+  q5: {
+    ok:   v => v === '1',
+    hint: 'Think carefully about both extremes: what does zero transmission mean for rescue, and what does maximum transmission mean for between-host variation?',
+    yes:  '✓ Correct. Low virulence and intermediate transmission give mild strains the best chance. Zero transmission leaves hosts isolated — within-host selection takes over and every host eventually collapses. Maximum transmission homogenises hosts, eliminating the between-host variation that between-host selection needs. An intermediate rate preserves host differences while allowing mild strains to flow from stable hosts into threatened ones.',
+    no:   '✗ An intermediate transmission rate is the sweet spot. Zero transmission prevents rescue between hosts. Maximum transmission destroys between-host variation. Only an intermediate rate balances both: enough variation to sustain between-host selection, enough flow to allow mild-strain rescue.',
+  },
+  q6: {
+    ok:   v => v === '0',
+    hint: 'Think about what happens to mild strains inside a host when virulence is low — how long do they persist, and what does that mean for their chances of reaching a new host?',
+    yes:  '✓ Correct. When strains transmit before causing serious harm, mild strains can seed new hosts before virulent strains complete within-host competitive exclusion. This preserves between-host variation and allows mild strains to persist globally. In nature, many successful pathogens — such as rhinoviruses causing common colds — are highly transmissible and relatively mild precisely because they do not destroy the host before transmission occurs. High virulence that kills the host before transmission is evolutionarily self-defeating.',
+    no:   '✗ Rapid transmission relative to virulence favours mild strains. When strains transmit quickly, mild strains can seed new hosts before virulent strains finish taking over within any single host. Virulent strains that destroy the host before transmission occurs are selected against at the between-host level.',
+  },
+};
+
+function checkQ(qid) {
+  const block  = document.getElementById(qid);
+  const chosen = block.querySelector('input[type=radio]:checked');
+  const fb     = document.getElementById(qid + '_fb');
+  const q      = QS[qid];
+  if (!q || !fb) return;
+
+  if (!chosen) {
+    fb.className = 'q-feedback hint';
+    fb.innerHTML = 'Please select an answer first.';
+    return;
+  }
+
+  if (!attempts[qid]) attempts[qid] = 0;
+  attempts[qid]++;
+
+  if (q.ok(chosen.value)) {
+    fb.className = 'q-feedback correct';
+    fb.innerHTML = q.yes;
+  } else if (attempts[qid] === 1) {
+    fb.className = 'q-feedback hint';
+    fb.innerHTML = '💡 <strong>Hint:</strong> ' + q.hint;
+  } else {
+    fb.className = 'q-feedback wrong';
+    fb.innerHTML = q.no;
+    attempts[qid] = 0;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+
+function updateModeUI() {
+  const pill = document.getElementById('btn-mode');
+  const desc = document.getElementById('mode-desc');
+  if (virulentAuto) {
+    pill.textContent = 'Automatic';
+    pill.classList.add('auto');
+    desc.textContent = 'Virulent strains are seeded automatically.';
+  } else {
+    pill.textContent = 'Manual';
+    pill.classList.remove('auto');
+    desc.textContent = 'Click a fully-mild host to introduce a virulent strain.';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  applyPadValues();
+  buildPanels();
+  buildPad();
+  startSim();
+  updateModeUI();
+
+  document.getElementById('btn-mode').addEventListener('click', () => {
+    virulentAuto     = !virulentAuto;
+    virulentInterval = virulentAuto ? 100 : 0;
+    updateModeUI();
+  });
+
+  window.addEventListener('resize', () => {
+    buildTimeline();
+    for (let g = 0; g < N_GROUPS; g++) drawGroup(g);
+  });
+});
+</script>
+</body>
+</html>

@@ -266,8 +266,8 @@
 
 <p class="drag-hint">Use the buttons above to see the description and logic of each game.<br>Drag the lines below to change the payoffs and explore each game.</p>
 <div class="legend">
-  <div class="legend-item"><div class="legend-swatch" style="background:#4a7fa5"></div>Cooperate</div>
-  <div class="legend-item"><div class="legend-swatch" style="background:#b05a3a"></div>Defect</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#4a7fa5"></div>Cooperate (C)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#b05a3a"></div>Defect (D)</div>
 </div>
 <div class="viz" id="payoff-chart"></div>
 
@@ -387,7 +387,7 @@ const GAMES = {
     // Defect row:    DC higher than DD → DC=dark red,  DD=light red
     colors: {CC:'#4a7fa5', CD:'#b8d4e8', DC:'#b83232', DD:'#f0b8b8'},
     description: '<strong>Prisoner\'s Dilemma.</strong> Two suspects are held separately and each is offered the same deal: testify against the other (defect) or stay silent (cooperate). In biological terms, defecting is always the better response regardless of what the other player does — this is called <strong>dominance</strong>. The tragedy is that mutual defection, the outcome both players are driven towards, is worse for everyone than mutual cooperation would have been. Turn on the ESS toggle to see how this plays out in an evolving population.',
-    ess: '<strong>ESS — All Defectors.</strong> The defector payoff line lies entirely above the cooperator line for every population frequency. No matter how many cooperators are present, defectors always have higher fitness. Once defectors dominate, cooperators cannot invade — defection is the only evolutionarily stable outcome.',
+    ess: '<strong>Prisoner\'s Dilemma ESS — All Defectors.</strong> The defector payoff line lies entirely above the cooperator line for every population frequency. No matter how many cooperators are present, defectors always have higher fitness. Once defectors dominate, cooperators cannot invade — defection is the only evolutionarily stable outcome.',
   },
   chicken: {
     name: 'Chicken',
@@ -397,7 +397,7 @@ const GAMES = {
     // Defect row:    DC higher than DD → DC=dark red,  DD=light red
     colors: {CC:'#4a7fa5', CD:'#b8d4e8', DC:'#b83232', DD:'#f0b8b8'},
     description: '<strong>Chicken.</strong> Two drivers speed towards each other — the one who swerves first (cooperates) loses face, but if neither swerves (both defect) the result is catastrophic. Unlike the Prisoner\'s Dilemma, the worst outcome here is mutual defection. There is no dominant strategy: the best move depends entirely on what your partner does, so the outcome is always a tension between aggression and backing down. Turn on the ESS toggle to see how this plays out in an evolving population.',
-    ess: '<strong>ESS — Stable Mixed Equilibrium.</strong> The payoff lines cross at an interior frequency. To the left of the crossing defectors have higher fitness, pushing frequency up; to the right cooperators have higher fitness, pushing it back down. The population converges to the crossing from both sides — this is a <em>stable</em> ESS at a mixed frequency of cooperators and defectors.',
+    ess: '<strong>Chicken ESS — Stable Mixed Equilibrium.</strong> The payoff lines cross at an interior frequency. To the left of the crossing defectors have higher fitness, pushing frequency up; to the right cooperators have higher fitness, pushing it back down. The population converges to the crossing from both sides — this is a <em>stable</em> ESS at a mixed frequency of cooperators and defectors.',
   },
   stag: {
     name: 'Staghunt',
@@ -407,7 +407,7 @@ const GAMES = {
     // Defect row:    DC higher than DD → DC=dark red,  DD=light red
     colors: {CC:'#4a7fa5', CD:'#b8d4e8', DC:'#b83232', DD:'#f0b8b8'},
     description: '<strong>Staghunt.</strong> Two hunters can each choose to hunt a large stag together (cooperate) or hunt a small hare alone (defect). Hunting the stag requires both players to cooperate — if your partner defects, your cooperation yields nothing. The best outcome is mutual cooperation, but only if you trust that your partner will also cooperate. The game rewards coordination: each player does best by matching what the other does. Turn on the ESS toggle to see how this plays out in an evolving population.',
-    ess: '<strong>ESS — Two Stable Endpoints, Unstable Interior.</strong> The payoff lines cross, but this crossing is an <em>unstable</em> equilibrium — a tipping point. Below it, defectors have higher fitness and the population drifts to all-defection. Above it, cooperators have higher fitness and the population climbs to all-cooperation. Which ESS is reached depends entirely on where the population starts.',
+    ess: '<strong>Staghunt ESS — Two Stable Endpoints, Unstable Interior.</strong> The payoff lines cross, but this crossing is an <em>unstable</em> equilibrium — a tipping point. Below it, defectors have higher fitness and the population drifts to all-defection. Above it, cooperators have higher fitness and the population climbs to all-cooperation. Which ESS is reached depends entirely on where the population starts.',
   },
   mutualism: {
     name: 'Mutualism',
@@ -416,7 +416,7 @@ const GAMES = {
     CC: 5, CD: 3, DC: 1, DD: 0,
     colors: {CC:'#4a7fa5', CD:'#b8d4e8', DC:'#b83232', DD:'#f0b8b8'},
     description: '<strong>Mutualism.</strong> Both partners gain more from cooperating than from defecting, regardless of what the other individual does. Examples include cleaner fish that reliably service clients, or mycorrhizal fungi that consistently provide nutrients to plant roots. This is the mirror image of the Prisoner\'s Dilemma: cooperation is the dominant strategy, and there is no temptation to defect because exploiting your partner always yields a lower payoff. Turn on the ESS toggle to see how this plays out in an evolving population.',
-    ess: '<strong>ESS — All Cooperators.</strong> The cooperator payoff line lies entirely above the defector line for every population frequency. No matter how rare cooperators are, they always have higher fitness than defectors. Once cooperators dominate, defectors cannot invade — cooperation is the only evolutionarily stable outcome.',
+    ess: '<strong>Mutualism ESS — All Cooperators.</strong> The cooperator payoff line lies entirely above the defector line for every population frequency. No matter how rare cooperators are, they always have higher fitness than defectors. Once cooperators dominate, defectors cannot invade — cooperation is the only evolutionarily stable outcome.',
   }
 };
 
@@ -474,8 +474,8 @@ function renderMatrix(containerId, gameKey) {
       `<tr>` +
         `<td style="border:none;"></td>` +
         `<td style="border:none;"></td>` +
-        `${hdr('Cooperate')}` +
-        `${hdr('Defect')}` +
+        `${hdr('C')}` +
+        `${hdr('D')}` +
       `</tr>` +
       `<tr>` +
         `<td rowspan="2" style="border:none;padding:0 2px 0 0;vertical-align:middle;">` +
@@ -483,12 +483,12 @@ function renderMatrix(containerId, gameKey) {
           `font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;` +
           `text-align:center;white-space:nowrap;">Actor</div>` +
         `</td>` +
-        `${rowHdr('Cooperate')}` +
+        `${rowHdr('C')}` +
         `${cell(v.CC, c.CC)}` +
         `${cell(v.CD, c.CD)}` +
       `</tr>` +
       `<tr>` +
-        `${rowHdr('Defect')}` +
+        `${rowHdr('D')}` +
         `${cell(v.DC, c.DC)}` +
         `${cell(v.DD, c.DD)}` +
       `</tr>` +
@@ -600,76 +600,45 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
       .attr('stroke','#b05a3a').attr('stroke-width',2.5);
 
     // ESS annotations
-    if (drawESSAnnotations) {
-      const denom = CC - CD - DC + DD;
-      let crossF = null;
-      if (Math.abs(denom) > 0.0001) {
-        const f0 = (DD - CD) / denom;
-        if (f0 > 0.001 && f0 < 0.999) crossF = f0;
-      }
+    // Compute crossF here so arrows can be drawn after the axis
+    const denom = CC - CD - DC + DD;
+    let crossF = null;
+    if (Math.abs(denom) > 0.0001) {
+      const f0 = (DD - CD) / denom;
+      if (f0 > 0.001 && f0 < 0.999) crossF = f0;
+    }
 
+    if (drawESSAnnotations) {
       // Helper: arrowhead pointing to highest dot + label
       function drawESSLine(f, label, color, dashed, labelY) {
         const cx = xS(f);
-        // Find the highest payoff dot at this frequency and stop just above it
-        const highestDotY = Math.min(yS(payC(f)), yS(payD(f))); // min y = highest on screen
-        const aw = 7;                              // half-width of equilateral triangle
-        const ah = Math.round(aw * Math.sqrt(3)); // height ≈ 12px — equilateral
-        const arrowTip = highestDotY - 20;        // clear dot radius + small gap
-        // Downward-pointing equilateral triangle arrowhead only — no vertical line above it
+        const highestDotY = Math.min(yS(payC(f)), yS(payD(f)));
+        const aw = 7;
+        const ah = Math.round(aw * Math.sqrt(3));
+        const arrowTip = highestDotY - 20;
         dynG.append('polygon')
           .attr('points', `${cx},${arrowTip+ah} ${cx-aw},${arrowTip} ${cx+aw},${arrowTip}`)
           .attr('fill', color).attr('opacity', 0.7);
-        // Label: above-plot (labelY < 0) → just above plot top; inside-plot → at labelY
         dynG.append('text')
           .attr('x', cx).attr('y', labelY < 0 ? -14 : labelY)
           .attr('text-anchor', 'middle')
           .style('font-size','18px').style('font-family','Georgia,serif')
           .attr('fill', color).attr('font-weight', '600')
           .text(label);
-        // Dot at crossing point on x-axis
         dynG.append('circle')
           .attr('cx', cx).attr('cy', iH).attr('r', 5)
           .attr('fill', color);
       }
 
-      // Arrows below x-axis showing direction of selection
-      const arrowRegions = crossF !== null ? [0, crossF, 1] : [0, 1];
-      for (let i = 0; i < arrowRegions.length - 1; i++) {
-        const mid  = (arrowRegions[i] + arrowRegions[i+1]) / 2;
-        const cooperatorsRising = payC(mid) > payD(mid);
-        const arrowX = xS(mid);
-        const arrowY = iH + 16;
-        const arrowDir = cooperatorsRising ? -1 : 1; // -1 = leftward = more cooperators
-        const dx = arrowDir * 26;
-        dynG.append('line')
-          .attr('x1', arrowX - dx*0.5).attr('x2', arrowX + dx*0.5 - arrowDir*12)
-          .attr('y1', arrowY).attr('y2', arrowY)
-          .attr('stroke', cooperatorsRising ? '#4a7fa5' : '#b05a3a')
-          .attr('stroke-width', 2.5);
-        dynG.append('polygon')
-          .attr('points', () => {
-            const tip  = arrowX + dx*0.5;
-            const base = tip - arrowDir*12;
-            return `${tip},${arrowY} ${base},${arrowY-7} ${base},${arrowY+7}`;
-          })
-          .attr('fill', cooperatorsRising ? '#4a7fa5' : '#b05a3a');
-      }
-
       if (crossF === null) {
-        // Dominant strategy — ESS at one endpoint
         const essF = payD(0) > payC(0) ? 0 : 1;
         const label = essF === 0 ? 'All Defect (ESS)' : 'All Cooperate (ESS)';
         drawESSLine(essF, label, '#1b1e23', false, -38);
       } else {
         const stable = denom < 0;
         if (stable) {
-          // Stable interior ESS
           drawESSLine(crossF, 'Stable Equilibrium (ESS)', '#1b1e23', false, 2);
-          // Endpoints are unstable — no special marker needed
         } else {
-          // Unstable interior crossing + two stable endpoints
-          // Interior label sits just inside the plot top; endpoint labels sit just above it
           drawESSLine(crossF, 'Unstable Equilibrium', '#999', true, 2);
           drawESSLine(0, 'All Defect (ESS)', '#1b1e23', false, -38);
           drawESSLine(1, 'All Cooperate (ESS)', '#1b1e23', false, -38);
@@ -686,6 +655,31 @@ function drawPayoffLines(el, p, H, mg, onPayoffChange, drawESSAnnotations) {
       .attr('stroke','#888').attr('stroke-width',1);
     dynG.append('g').call(d3.axisLeft(yS).tickValues([0,1,2,3,4,5]).tickFormat(d3.format('d')))
       .selectAll('text').style('font-family','Georgia,serif').style('font-size','18px');
+
+    // Arrows drawn after axis so they appear on top
+    if (drawESSAnnotations) {
+      const arrowRegions = crossF !== null ? [0, crossF, 1] : [0, 1];
+      for (let i = 0; i < arrowRegions.length - 1; i++) {
+        const mid  = (arrowRegions[i] + arrowRegions[i+1]) / 2;
+        const cooperatorsRising = payC(mid) > payD(mid);
+        const arrowX = xS(mid);
+        const arrowY = iH;
+        const arrowDir = cooperatorsRising ? -1 : 1;
+        const dx = arrowDir * 26;
+        dynG.append('line')
+          .attr('x1', arrowX - dx*0.5).attr('x2', arrowX + dx*0.5 - arrowDir*12)
+          .attr('y1', arrowY).attr('y2', arrowY)
+          .attr('stroke', cooperatorsRising ? '#4a7fa5' : '#b05a3a')
+          .attr('stroke-width', 2.5);
+        dynG.append('polygon')
+          .attr('points', () => {
+            const tip  = arrowX + dx*0.5;
+            const base = tip - arrowDir*12;
+            return `${tip},${arrowY} ${base},${arrowY-7} ${base},${arrowY+7}`;
+          })
+          .attr('fill', cooperatorsRising ? '#4a7fa5' : '#b05a3a');
+      }
+    }
 
     // X labels
     dynG.append('text').attr('x',xS(1)).attr('y',iH+22).attr('text-anchor','middle')

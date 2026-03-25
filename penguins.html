@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <title>Emperor Penguin Huddling — UPEI Biology</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+  <style>
+    :root { color-scheme: light only; }
+    html, body { background: #fff !important; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, serif; font-size: 18px; line-height: 1.6; color: #1b1e23; }
+    .page { max-width: 680px; margin: 0 auto; padding: 48px 24px 96px; }
+    h1 { font-size: 2em; font-weight: bold; margin-bottom: 0.2em; }
+    h1 + h3 { font-style: italic; font-weight: normal; font-size: 1.1em; color: #555; margin-bottom: 1.2em; }
+    hr { border: none; border-top: 1px solid #e8e8e8; margin-bottom: 1.8em; }
+    h2 { font-size: 1.3em; margin: 1.6em 0 0.6em; }
+    p { margin-bottom: 1em; }
+    .sim-box { overflow: hidden; margin: 1.4em 0; }
+    .legend-table { border-collapse: collapse; margin: 0.8em 0 1.2em; font-size: 0.95em; }
+    .legend-table td { padding: 3px 0; vertical-align: middle; }
+    .legend-table .dot-cell { padding: 0; width: 20px; }
+    .legend-table .label-cell { padding-left: 8px; color: #555; }
+    .nav-table { width: 100%; border-collapse: collapse; margin-top: 3em; font-size: 0.95em; }
+    .nav-table td { padding: 4px 0; }
+    .nav-table a { color: #1b1e23; text-decoration: underline; }
+    .nav-table .nav-left  { text-align: left;   width: 35%; }
+    .nav-table .nav-mid   { text-align: center;  width: 30%; }
+    .nav-table .nav-right { text-align: right;   width: 35%; }
+    footer { margin-top: 1.4em; font-size: 0.95em; color: #555; text-align: center; line-height: 1.5; }
+    footer a { color: #aaa; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .param-controls { margin: 0.8em 0 0.6em; }
+    .param-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+    .param-tag { font-size: 0.88em; font-style: italic; color: #fff; background: #888; border-radius: 3px; padding: 2px 8px; white-space: nowrap; flex-shrink: 0; width: 112px; text-align: center; }
+    .param-wrap { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .param-desc { font-size: 0.88em; color: #555; font-style: italic; }
+    .param-wrap input[type=range] { width: 100%; }
+    input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: #ddd; outline: none; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #1b1e23; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #1b1e23; }
+    input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #1b1e23; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #1b1e23; }
+    .btn { display: inline-block; padding: 6px 20px; font-family: Georgia, serif; font-size: 0.95em; background: #1b1e23; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 0.5em 0 0.8em; }
+    .btn:hover { background: #333; }
+    .wind-canvas-wrap { flex-shrink: 0; cursor: crosshair; width: 220px; height: 220px; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Emperor Penguin Huddling</h1>
+  <h3>Thermoregulation and collective behaviour in <em>Aptenodytes forsteri</em></h3>
+  <hr>
+
+  <h2>Background</h2>
+  <p>
+    Emperor penguins (<em>Aptenodytes forsteri</em>) breed during the Antarctic winter, enduring
+    temperatures as low as −60 °C and wind speeds exceeding 200 km h<sup>−1</sup>. To survive
+    without food for months while incubating eggs, they form dense huddles — one of the most
+    remarkable examples of collective behaviour in the animal kingdom. No penguin is in charge.
+    No penguin knows the shape of the huddle. The structure emerges entirely from each individual
+    following a few simple local rules.
+  </p>
+
+  <h2>Two Simple Rules</h2>
+  <p>
+    Each penguin has a <strong>temperature</strong> that rises when it is surrounded by neighbours
+    and falls when it is exposed. Just two rules drive the collective behaviour:
+  </p>
+  <p>
+    <strong>1. Gain and lose heat locally.</strong> Each step a penguin gains <strong>+1</strong>
+    for every occupied neighbouring cell and loses <strong>−1</strong> for every empty one. A
+    penguin with three neighbours neither warms nor cools; with four or more it warms; with two or
+    fewer it cools. Wind adds an extra penalty of −1 to −5 to any penguin with an empty cell on
+    its windward side.
+  </p>
+  <p>
+    <strong>2. Move when cold, stay when warm.</strong> A penguin whose neighbourhood produces a
+    net heat loss moves into an adjacent empty cell, preferring the cell that borders the most
+    other penguins. A penguin gaining heat stays put. The <em>threshold</em> slider adjusts how
+    demanding penguins are: raise it and they move even when marginally warm; lower it and they
+    tolerate mild heat loss before moving.
+  </p>
+
+  <div class="sim-box" id="penguin-demo"></div>
+
+  <table class="legend-table">
+    <tr>
+      <td class="dot-cell"><svg width="12" height="12"><rect width="12" height="12" fill="#1a2a4a" rx="2"/></svg></td>
+      <td class="label-cell">Cold (navy) — losing heat, moves next step</td>
+    </tr>
+    <tr>
+      <td class="dot-cell"><svg width="12" height="12"><rect width="12" height="12" fill="#4a0f0f" rx="2"/></svg></td>
+      <td class="label-cell">Warm (crimson) — gaining heat, stays put</td>
+    </tr>
+  </table>
+
+  <h2>Simulation</h2>
+  <p>
+    Watch what happens when these two rules run simultaneously across a population scattered at
+    random. The huddle crystallises without any penguin having a global view — structure emerges
+    from local interactions alone. The chart below tracks population mean temperature (line),
+    the warmest quarter (red ribbon), and the coldest quarter (blue ribbon).
+  </p>
+
+  <div class="param-controls">
+    <div class="param-row">
+      <span class="param-tag">Penguins</span>
+      <div class="param-wrap">
+        <span class="param-desc">How many penguins? &nbsp;<span id="val-n">100</span></span>
+        <input type="range" id="sl-n" min="50" max="150" step="1" value="100">
+      </div>
+    </div>
+    <div class="param-row">
+      <span class="param-tag">Threshold</span>
+      <div class="param-wrap">
+        <span class="param-desc">Huddle threshold — stay put if heat gain ≥ &nbsp;<span id="val-thresh">0</span> per step</span>
+        <input type="range" id="sl-thresh" min="-6" max="6" step="1" value="0">
+      </div>
+    </div>
+    <div class="param-row" style="align-items:flex-start;">
+      <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="param-tag">Wind</span>
+          <span class="param-desc" id="wind-desc">Set wind speed and direction</span>
+        </div>
+        <div style="display:flex; justify-content:center;">
+          <canvas id="wind-canvas" class="wind-canvas-wrap" width="220" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sim-box" id="huddle-sim"></div>
+
+  <div class="viz" id="temp-chart"></div>
+
+  <table class="nav-table">
+    <tr>
+      <td class="nav-left"></td>
+      <td class="nav-mid"><a href="index.html">Index</a></td>
+      <td class="nav-right"><a href="penguins-02-heat-loss.html">Heat Loss →</a></td>
+    </tr>
+  </table>
+
+  <footer>
+    Emperor Penguin Huddling<br>
+    Stevan Springer · UPEI Biology · <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Flat-top axial hex grid ──────────────────────────────────────────────────
+  //
+  // Cell centre pixel offset from grid origin (confirmed tiling formula):
+  //   px = S * 1.5 * q
+  //   py = S * (√3/2 * q  +  √3 * r)
+  //
+  // All 6 neighbours at equal distance S*√3. Adjacent cells share exactly 2 vertices.
+  //
+  // Hex polygon vertex i at angle i*60° from centre (flat-top: flat edge top & bottom).
+  //
+  // The 6 neighbour directions (axial) and their SVG angles:
+  //   hi=0 E  ( 1, 0): +30°      hi=3 W  (-1, 0): -150° / +210°
+  //   hi=1 NE ( 1,-1): -30°      hi=4 SW (-1,+1): +150°
+  //   hi=2 NW ( 0,-1): -90°      hi=5 SE ( 0,+1): +90°
+  //
+  // To point a shape toward heading hi: rotate(HEADING_DEG[hi])
+
+  var S   = 10;
+  var SQ3 = Math.sqrt(3);
+
+  var DIRS = [
+    {dq: 1, dr: 0},   // 0 E
+    {dq: 1, dr:-1},   // 1 NE
+    {dq: 0, dr:-1},   // 2 NW
+    {dq:-1, dr: 0},   // 3 W
+    {dq:-1, dr: 1},   // 4 SW
+    {dq: 0, dr: 1},   // 5 SE
+  ];
+
+  // SVG rotation to point something toward heading hi
+  var HEADING_DEG = [30, -30, -90, -150, 150, 90];
+
+  function axPx(q, r) {
+    return [S * 1.5 * q,  S * (SQ3 / 2 * q + SQ3 * r)];
+  }
+
+  // Flat-top hex vertices centred at (cx,cy), circumradius r
+  function hexVerts(cx, cy, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = Math.PI / 3 * i;
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    }
+    return pts;
+  }
+
+  function vertsToPoints(verts) {
+    return verts.map(function(p) { return p[0].toFixed(2) + ',' + p[1].toFixed(2); }).join(' ');
+  }
+
+  // ── Display ──────────────────────────────────────────────────────────────────
+  var simEl = document.getElementById('huddle-sim');
+  var VW = simEl.clientWidth || 560;          // viewport width (SVG element size)
+  var VH = Math.round(VW * 0.75);             // viewport height
+  var WORLD_SCALE = 1.0;                      // world = viewport, no panning needed
+  var WW = Math.round(VW * WORLD_SCALE);      // full world width
+  var WH = Math.round(VH * WORLD_SCALE);      // full world height
+  var OX = WW / 2, OY = WH / 2;              // world origin at centre
+  var PAD = S + 2;
+
+  // W/H aliases for compat (used in cellXY, buildPenguin, etc.)
+  var W = WW, H = WH;
+
+  function cellXY(q, r) {
+    var off = axPx(q, r);
+    return [off[0] + OX, off[1] + OY];
+  }
+
+  function inBounds(q, r) {
+    var xy = cellXY(q, r);
+    return xy[0] >= PAD && xy[0] <= WW - PAD && xy[1] >= PAD && xy[1] <= WH - PAD;
+  }
+
+  var allCells = [];
+  for (var q = -50; q <= 50; q++)
+    for (var r = -50; r <= 50; r++)
+      if (inBounds(q, r)) allCells.push([q, r]);
+
+
+  // ── Penguin appearance ───────────────────────────────────────────────────────
+  //
+  // The penguin body is always flat-top aligned with the grid cell — never rotated.
+  // Layers drawn into group g at local origin (0,0):
+  //   1. Hexagon background — temperature colour, class 'body'
+  //   2. White breast stripe — clipped rectangle on left-centre of hex
+  //   3. Orange direction triangle — rotated to heading, class 'arrow', updated each step
+  //
+  // The group g itself is only translated to cellXY — never rotated.
+
+  var tempColour = d3.scaleLinear()
+    .domain([-30, 30]).range(['#1a2a4a', '#4a0f0f']).clamp(true);
+
+  // White stripe: a band at x = [-S*0.1 .. S*0.3] clipped to hex — drawn as a rect
+  // covering the left-centre portion. Clipped by the hex outline.
+  // Sutherland-Hodgman clip of polygon pts to vertical band [x0,x1]
+  function clipBand(pts, x0, x1) {
+    function clipSide(poly, x, keepRight) {
+      var out = [];
+      for (var i = 0; i < poly.length; i++) {
+        var a = poly[i], b = poly[(i+1) % poly.length];
+        var aIn = keepRight ? a[0] >= x : a[0] <= x;
+        var bIn = keepRight ? b[0] >= x : b[0] <= x;
+        if (aIn) out.push(a);
+        if (aIn !== bIn) {
+          var t = (x - a[0]) / (b[0] - a[0]);
+          out.push([x, a[1] + t * (b[1] - a[1])]);
+        }
+      }
+      return out;
+    }
+    var p = pts.slice();
+    p = clipSide(p, x0, true);
+    p = clipSide(p, x1, false);
+    // deduplicate adjacent identical points
+    var out = [p[0]];
+    for (var i = 1; i < p.length; i++) {
+      if (Math.abs(p[i][0]-out[out.length-1][0]) > 0.001 ||
+          Math.abs(p[i][1]-out[out.length-1][1]) > 0.001) out.push(p[i]);
+    }
+    return out;
+  }
+
+  function buildPenguin(g, radius) {
+    // Body: flat-top hex, never rotated — always aligned with grid cell.
+    // Plumage: inner group rotated each step to show heading direction.
+    // Bands are pre-clipped to the flat-top hex outline (no clip path needed).
+    var verts = hexVerts(0, 0, radius);
+    var xL = -radius, xR = radius, w = 2 * radius;
+
+    var whitePts  = clipBand(verts, xL + w * 0.65, xL + w * 0.75);
+    var orangePts = clipBand(verts, xL + w * 0.75, xR);
+
+    // Body background — static, flat-top
+    g.append('polygon')
+      .attr('class', 'body')
+      .attr('points', vertsToPoints(verts))
+      .attr('fill', '#1a2a4a');
+
+    // Plumage group — rotated each step
+    var plumage = g.append('g').attr('class', 'plumage');
+
+    if (whitePts.length)
+      plumage.append('polygon')
+        .attr('points', vertsToPoints(whitePts))
+        .attr('fill', '#e8e4dc');
+
+    if (orangePts.length)
+      plumage.append('polygon')
+        .attr('points', vertsToPoints(orangePts))
+        .attr('fill', '#e8a020');
+  }
+
+  // ── Simulation state ─────────────────────────────────────────────────────────
+  var N = 100;
+  var THRESHOLD = 0;
+  // Temperature history for chart: arrays of {mean, q25, q75} per step
+  var tempHistory = [];
+  var stepCount = 0;
+  var penguins = [];
+  // wind: {hi: 0-5, speed: 0-1} or null for no wind
+  var wind = null;
+
+  function initPenguins() {
+    var shuffled = allCells.slice().sort(function() { return Math.random() - 0.5; });
+    penguins = shuffled.slice(0, N).map(function(c, i) {
+      return { id: i, q: c[0], r: c[1], hi: Math.floor(Math.random() * 6), temp: 0 };
+    });
+  }
+
+  function makeOcc() {
+    var m = new Map();
+    penguins.forEach(function(p) { m.set(p.q + ',' + p.r, p); });
+    return m;
+  }
+
+  // ── Step ─────────────────────────────────────────────────────────────────────
+  function step() {
+    // Step order: move → update temperature → orient warm penguins.
+    // This ensures temperature reflects actual new positions before
+    // warm/cold status is re-assessed for the next step.
+
+    // 1. MOVE — penguins whose current-position delta < THRESHOLD move.
+    //    delta = occupied_neighbours - empty_neighbours (± wind chill).
+    //    THRESHOLD is a rate: 0 means move if losing heat, >0 means move even if stable.
+    var occ = makeOcc();
+
+    function currentDelta(p) {
+      var occupied = 0, empty = 0;
+      DIRS.forEach(function(d) {
+        if (occ.has((p.q+d.dq)+','+(p.r+d.dr))) occupied++; else empty++;
+      });
+      var delta = occupied - empty;
+      if (wind && wind.speed > 0) {
+        var windKey = (p.q + DIRS[wind.hi].dq) + ',' + (p.r + DIRS[wind.hi].dr);
+        if (!occ.has(windKey)) delta -= Math.round(wind.speed * 5);
+      }
+      return delta;
+    }
+
+    var coldPenguins = penguins.filter(function(p) { return currentDelta(p) < THRESHOLD; });
+    coldPenguins.sort(function() { return Math.random() - 0.5; });
+    var claimed = new Map();
+    penguins.forEach(function(p) { if (currentDelta(p) >= THRESHOLD) claimed.set(p.q + ',' + p.r, true); });
+
+    // Count occupied neighbours of a candidate cell (excluding the mover's current cell)
+    function warmthPotential(tq, tr, excludeKey) {
+      var n = 0;
+      DIRS.forEach(function(d) {
+        var k = (tq + d.dq) + ',' + (tr + d.dr);
+        if (k !== excludeKey && occ.has(k)) n++;
+      });
+      return n;
+    }
+
+    coldPenguins.forEach(function(p) {
+      claimed.set(p.q + ',' + p.r, true);
+      var candidates = [];
+      DIRS.forEach(function(d, hi) {
+        var tq = p.q + d.dq, tr = p.r + d.dr;
+        if (inBounds(tq, tr) && !occ.has(tq + ',' + tr) && !claimed.has(tq + ',' + tr))
+          candidates.push({q: tq, r: tr, hi: hi,
+                           pot: warmthPotential(tq, tr, p.q + ',' + p.r)});
+      });
+      if (candidates.length === 0 || Math.random() < 1/7) return;
+      // Find max potential then pick randomly among tied best
+      var best = d3.max(candidates, function(c) { return c.pot; });
+      var top = candidates.filter(function(c) { return c.pot === best; });
+      var target = top[Math.floor(Math.random() * top.length)];
+      claimed.delete(p.q + ',' + p.r);
+      claimed.set(target.q + ',' + target.r, true);
+      p.hi = target.hi;
+      p.q = target.q; p.r = target.r;
+    });
+
+    // 2. TEMPERATURE — update based on new positions
+    var newOcc = makeOcc();
+    penguins.forEach(function(p) {
+      var occupied = 0, empty = 0;
+      DIRS.forEach(function(d) {
+        if (newOcc.has((p.q+d.dq)+','+(p.r+d.dr))) occupied++;
+        else empty++;
+      });
+      // Integer delta: +1 per occupied neighbour, -1 per empty neighbour
+      var delta = occupied - empty;
+      // Wind chill: windward empty face subtracts 1–5 depending on speed
+      if (wind && wind.speed > 0) {
+        var windFace = DIRS[wind.hi];
+        var windKey = (p.q + windFace.dq) + ',' + (p.r + windFace.dr);
+        if (!newOcc.has(windKey)) {
+          delta -= Math.round(wind.speed * 5);
+        }
+      }
+      p.temp = Math.min(30, Math.max(-30, p.temp + delta));
+    });
+
+    // 3. ORIENT — warm penguins face away from wind (if active),
+    //    otherwise rotate toward warmest neighbour. Hottest penguin has priority.
+    var finalOcc = makeOcc();
+    var warmPenguins = penguins.filter(function(p) { return p.temp >= THRESHOLD; });
+    warmPenguins.sort(function(a, b) { return b.temp - a.temp; });
+    warmPenguins.forEach(function(p) {
+      if (wind && wind.speed > 0) {
+        // Two plumage-hi values whose beak points at a vertex flanking the away face.
+        // Precomputed from geometry: wind hi → [phi1, phi2]
+        //   Wind SE(0)→NW away: phi 3,2  | Wind NE(1)→SW away: phi 4,3
+        //   Wind N(2) →S  away: phi 5,4  | Wind NW(3)→SE away: phi 0,5
+        //   Wind SW(4)→NE away: phi 1,0  | Wind S(5) →N  away: phi 2,1
+        var awayPhis = [[3,2],[4,3],[5,4],[0,5],[1,0],[2,1]];
+        var opts = awayPhis[wind.hi];
+        var v1 = opts[0], v2 = opts[1];
+        var d1 = Math.min(Math.abs(p.hi - v1), 6 - Math.abs(p.hi - v1));
+        var d2 = Math.min(Math.abs(p.hi - v2), 6 - Math.abs(p.hi - v2));
+        var targetHi = (d1 <= d2) ? v1 : v2;
+        if (p.hi !== targetHi) {
+          var cw = (targetHi - p.hi + 6) % 6;
+          p.hi = cw <= 3 ? (p.hi + 1) % 6 : (p.hi + 5) % 6;
+        }
+      } else {
+        // No wind — orient toward warmest neighbour
+        var bestHi = -1, bestTemp = -1;
+        DIRS.forEach(function(d, hi) {
+          var nb = finalOcc.get((p.q + d.dq) + ',' + (p.r + d.dr));
+          if (!nb) return;
+          if (nb.temp > bestTemp) { bestTemp = nb.temp; bestHi = hi; }
+        });
+        if (bestHi >= 0 && bestHi !== p.hi) {
+          var cw = (bestHi - p.hi + 6) % 6;
+          p.hi = cw <= 3 ? (p.hi + 1) % 6 : (p.hi + 5) % 6;
+        }
+      }
+    });
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+  function render() {
+    pGroups
+      .attr('transform', function(d) {
+        var xy = cellXY(d.q, d.r);
+        return 'translate(' + xy[0].toFixed(1) + ',' + xy[1].toFixed(1) + ')';
+      })
+      .each(function(d) {
+        d3.select(this).select('.body').attr('fill', tempColour(d.temp));
+        d3.select(this).select('.plumage').attr('transform', 'rotate(' + (HEADING_DEG[d.hi] - 30) + ')');
+      });
+  }
+
+  // ── Build simulation SVG ─────────────────────────────────────────────────────
+  var svg = d3.select('#huddle-sim')
+    .append('svg')
+    .attr('width', VW).attr('height', VH)
+    .attr('viewBox', '0 0 ' + VW + ' ' + VH)
+    .style('display', 'block').style('margin', '0 auto');
+
+  // Grid background (drawn once, full world)
+  allCells.forEach(function(c) {
+    var xy = cellXY(c[0], c[1]);
+    svg.append('polygon')
+      .attr('points', vertsToPoints(hexVerts(xy[0], xy[1], S - 0.5)))
+      .attr('fill', 'none').attr('stroke', 'none');
+  });
+
+  var pGroups;
+  var STEP_MS = 350, lastT = 0;
+  var timerHandle = null;
+  function startSim() {
+    if (timerHandle) { timerHandle.stop(); timerHandle = null; }
+    initPenguins();
+    svg.selectAll('g.penguin').remove();
+    pGroups = svg.selectAll('g.penguin')
+      .data(penguins).enter()
+      .append('g').attr('class', 'penguin');
+    pGroups.each(function(d) { buildPenguin(d3.select(this), S - 1); });
+    render();
+    lastT = 0;
+    tempHistory = [];
+    stepCount = 0;
+    buildTempChart();
+    timerHandle = d3.timer(function(t) {
+      if (t - lastT < STEP_MS) return;
+      lastT = t; step(); render();
+      // Record temperature statistics
+      var temps = penguins.map(function(p) { return p.temp; }).sort(function(a,b){return a-b;});
+      var n = temps.length;
+      var mean = temps.reduce(function(s,v){return s+v;},0) / n;
+      var q25 = temps[Math.floor(n * 0.25)];
+      var q75 = temps[Math.floor(n * 0.75)];
+      stepCount++;
+      tempHistory.push({t: stepCount, mean: mean, q25: q25, q75: q75});
+      updateTempChart();
+    });
+  }
+
+  // ── Wind hex slider ──────────────────────────────────────────────────────────
+  (function() {
+    var canvas = document.getElementById('wind-canvas');
+    var ctx = canvas.getContext('2d');
+    var CX = canvas.width / 2, CY = canvas.height / 2;
+    var R = 76;   // hex circumradius
+    var SNAP_R = 32; // centre deadzone radius — within this = no wind
+
+    // Flat-top hex: vertex i at angle i*60°
+    function hexPt(i, r) {
+      var a = Math.PI / 3 * i;
+      return [CX + r * Math.cos(a), CY + r * Math.sin(a)];
+    }
+
+    // The 6 face midpoints of the hex (same as HEADING_DEG directions)
+    // Face hi is at HEADING_DEG[hi] degrees from centre
+    function facePt(hi, r) {
+      var a = HEADING_DEG[hi] * Math.PI / 180;
+      return [CX + r * Math.cos(a), CY + r * Math.sin(a)];
+    }
+
+    var dotHi = null, dotSpeed = 0; // current wind state
+
+    function drawWind() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Hex outline
+      ctx.beginPath();
+      for (var i = 0; i < 6; i++) {
+        var p = hexPt(i, R);
+        i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#f5f5f5';
+      ctx.fill();
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // 6 axes (face to face)
+      for (var hi = 0; hi < 3; hi++) {
+        var p1 = facePt(hi, R), p2 = facePt(hi + 3, R);
+        ctx.beginPath();
+        ctx.moveTo(p1[0], p1[1]);
+        ctx.lineTo(p2[0], p2[1]);
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Centre circle (no-wind zone)
+      ctx.beginPath();
+      ctx.arc(CX, CY, SNAP_R, 0, Math.PI * 2);
+      ctx.fillStyle = '#e8e8e8';
+      ctx.fill();
+
+      // Wind dot
+      var dx, dy;
+      if (dotHi === null) {
+        dx = CX; dy = CY;
+      } else {
+        var a = HEADING_DEG[dotHi] * Math.PI / 180;
+        dx = CX + dotSpeed * R * Math.cos(a);
+        dy = CY + dotSpeed * R * Math.sin(a);
+      }
+      ctx.beginPath();
+      ctx.arc(dx, dy, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#1b1e23';
+      ctx.fill();
+
+      // Compass face labels
+      var faceNames = ['SE', 'NE', 'N', 'NW', 'SW', 'S'];
+      ctx.font = '13px Georgia, serif';
+      ctx.fillStyle = '#999';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (var fi = 0; fi < 6; fi++) {
+        var fa = HEADING_DEG[fi] * Math.PI / 180;
+        var flx = CX + (R + 10) * Math.cos(fa);
+        var fly = CY + (R + 10) * Math.sin(fa);
+        ctx.fillText(faceNames[fi], flx, fly);
+      }
+
+      // Wind direction arrow on active axis
+      if (dotHi !== null && dotSpeed > 0.05) {
+        var a = HEADING_DEG[dotHi] * Math.PI / 180;
+        var tx = CX + R * Math.cos(a), ty = CY + R * Math.sin(a);
+        ctx.beginPath();
+        ctx.moveTo(CX, CY);
+        ctx.lineTo(tx, ty);
+        ctx.strokeStyle = 'rgba(27,30,35,0.2)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    function xyToWind(x, y) {
+      var dx = x - CX, dy = y - CY;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < SNAP_R) { dotHi = null; dotSpeed = 0; wind = null; return; }
+      // Find nearest axis
+      var angle = Math.atan2(dy, dx);
+      var best = 0, bestDot = -Infinity;
+      for (var hi = 0; hi < 6; hi++) {
+        var a = HEADING_DEG[hi] * Math.PI / 180;
+        var dot = Math.cos(angle - a);
+        if (dot > bestDot) { bestDot = dot; best = hi; }
+      }
+      // Project dist onto axis, clamp to [0, R]
+      var a2 = HEADING_DEG[best] * Math.PI / 180;
+      var proj = dx * Math.cos(a2) + dy * Math.sin(a2);
+      // The dot snaps to whichever hemisphere it's in
+      if (proj < 0) { best = (best + 3) % 6; proj = -proj; }
+      dotHi = best;
+      dotSpeed = Math.min(1, proj / R);
+      wind = { hi: dotHi, speed: dotSpeed };
+    }
+
+    function updateDesc() {
+      var el = document.getElementById('wind-desc');
+      if (!wind) { el.textContent = 'Set wind speed and direction'; return; }
+      var names = ['SE', 'NE', 'N', 'NW', 'SW', 'S'];
+      el.textContent = 'Wind from ' + names[wind.hi] + ' — chill −' + Math.round(wind.speed * 5);
+    }
+
+    var dragging = false;
+    canvas.addEventListener('mousedown', function(e) {
+      dragging = true;
+      var r = canvas.getBoundingClientRect();
+      xyToWind((e.clientX - r.left) * canvas.width / r.width,
+               (e.clientY - r.top)  * canvas.height / r.height);
+      drawWind(); updateDesc();
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      var r = canvas.getBoundingClientRect();
+      xyToWind((e.clientX - r.left) * canvas.width / r.width,
+               (e.clientY - r.top)  * canvas.height / r.height);
+      drawWind(); updateDesc();
+    });
+    canvas.addEventListener('mouseup', function() { dragging = false; });
+    canvas.addEventListener('mouseleave', function() { dragging = false; });
+    canvas.addEventListener('touchstart', function(e) {
+      e.preventDefault(); dragging = true;
+      var r = canvas.getBoundingClientRect(), t = e.touches[0];
+      xyToWind((t.clientX - r.left) * canvas.width / r.width,
+               (t.clientY - r.top)  * canvas.height / r.height);
+      drawWind(); updateDesc();
+    }, {passive: false});
+    canvas.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+      var r = canvas.getBoundingClientRect(), t = e.touches[0];
+      xyToWind((t.clientX - r.left) * canvas.width / r.width,
+               (t.clientY - r.top)  * canvas.height / r.height);
+      drawWind(); updateDesc();
+    }, {passive: false});
+    canvas.addEventListener('touchend', function() { dragging = false; });
+
+    drawWind();
+  })();
+
+  // ── Temperature chart ────────────────────────────────────────────────────────
+  var tcG, tcXS, tcYS, tcXAx, tcMean, tcRibbonWarm, tcRibbonCold;
+  var TCM = {top: 20, right: 20, bottom: 44, left: 52}, TCH = 200;
+
+  function buildTempChart() {
+    var el = document.getElementById('temp-chart');
+    var W2 = el.clientWidth || 560;
+    var iW = W2 - TCM.left - TCM.right;
+    var iH = TCH - TCM.top - TCM.bottom;
+    d3.select(el).selectAll('*').remove();
+    var svg = d3.select(el).append('svg').attr('width', W2).attr('height', TCH)
+      .style('font-family', 'Georgia, serif').style('font-size', '18px');
+    tcG = svg.append('g').attr('transform', 'translate(' + TCM.left + ',' + TCM.top + ')');
+
+    tcXS = d3.scaleLinear().domain([0, 200]).range([0, iW]);
+    tcYS = d3.scaleLinear().domain([-30, 30]).range([iH, 0]);
+
+    // Gridlines
+    tcG.append('g').call(
+      d3.axisLeft(tcYS).tickValues([-30,-20,-10,0,10,20,30]).tickFormat(d3.format('d'))
+    ).call(function(g) {
+      g.select('.domain').remove();
+      g.selectAll('.tick line').clone()
+        .attr('x2', iW).attr('stroke', '#eee').attr('stroke-dasharray', '3,2');
+    }).selectAll('text').style('font-family','Georgia,serif').style('font-size','18px');
+
+    // Zero line
+    tcG.append('line').attr('x1',0).attr('x2',iW)
+      .attr('y1',tcYS(0)).attr('y2',tcYS(0))
+      .attr('stroke','#ccc').attr('stroke-width',1);
+
+    tcXAx = tcG.append('g').attr('transform','translate(0,' + iH + ')')
+      .call(d3.axisBottom(tcXS).ticks(6));
+    tcXAx.selectAll('text').style('font-family','Georgia,serif').style('font-size','18px');
+
+    // Axis labels
+    tcG.append('text').attr('transform','rotate(-90)')
+      .attr('x', -iH/2).attr('y', -42)
+      .attr('text-anchor','middle').style('font-size','18px')
+      .attr('fill','#555').attr('font-style','italic').text('Temperature');
+    tcG.append('text').attr('x', iW/2).attr('y', iH + 38)
+      .attr('text-anchor','middle').style('font-size','18px')
+      .attr('fill','#555').attr('font-style','italic').text('Time (steps)');
+
+    // Ribbon paths (warm above mean = red, cold below mean = blue)
+    tcRibbonWarm = tcG.append('path').attr('fill', '#b83232').attr('opacity', 0.25).attr('stroke', 'none');
+    tcRibbonCold = tcG.append('path').attr('fill', '#2a4a8a').attr('opacity', 0.25).attr('stroke', 'none');
+    // Mean line on top
+    tcMean = tcG.append('path').attr('fill', 'none').attr('stroke', '#1b1e23').attr('stroke-width', 2);
+  }
+
+  function updateTempChart() {
+    if (!tcG || tempHistory.length < 2) return;
+    var maxT = Math.max(200, tempHistory[tempHistory.length-1].t);
+    tcXS.domain([0, maxT]);
+    tcXAx.call(d3.axisBottom(tcXS).ticks(6));
+    tcXAx.selectAll('text').style('font-family','Georgia,serif').style('font-size','18px');
+
+    var areaWarm = d3.area()
+      .x(function(d) { return tcXS(d.t); })
+      .y0(function(d) { return tcYS(d.mean); })
+      .y1(function(d) { return tcYS(d.q75); })
+      .curve(d3.curveBasis);
+
+    var areaCold = d3.area()
+      .x(function(d) { return tcXS(d.t); })
+      .y0(function(d) { return tcYS(d.mean); })
+      .y1(function(d) { return tcYS(d.q25); })
+      .curve(d3.curveBasis);
+
+    var lineMean = d3.line()
+      .x(function(d) { return tcXS(d.t); })
+      .y(function(d) { return tcYS(d.mean); })
+      .curve(d3.curveBasis);
+
+    tcRibbonWarm.attr('d', areaWarm(tempHistory));
+    tcRibbonCold.attr('d', areaCold(tempHistory));
+    tcMean.attr('d', lineMean(tempHistory));
+  }
+
+  // Slider wiring — any change restarts the simulation
+  d3.select('#sl-n').on('input', function() {
+    N = +this.value;
+    d3.select('#val-n').text(N);
+    startSim();
+  });
+  d3.select('#sl-thresh').on('input', function() {
+    THRESHOLD = +this.value;
+    d3.select('#val-thresh').text(THRESHOLD);
+    startSim();
+  });
+
+  startSim();
+
+  // ── Demo SVG ─────────────────────────────────────────────────────────────────
+  var DR = 34;
+  var demoSvg = d3.select('#penguin-demo')
+    .append('svg').attr('width', 300).attr('height', 110)
+    .style('display', 'block');
+  var gCold = demoSvg.append('g');
+  buildPenguin(gCold, DR);
+  // Cold: navy body, arrow pointing E (hi=0, 30°)
+  gCold.attr('transform', 'translate(80,52)');
+  gCold.select('.plumage').attr('transform', 'rotate(' + (HEADING_DEG[0] - 30) + ')');
+  gCold.select('.body').attr('fill', tempColour(-30));
+
+  var gWarm = demoSvg.append('g');
+  buildPenguin(gWarm, DR);
+  // Warm: crimson body, arrow pointing NW (hi=2, -90°)
+  gWarm.attr('transform', 'translate(220,52)');
+  gWarm.select('.plumage').attr('transform', 'rotate(0)'); // east-facing: vertex 0 at 0°
+  gWarm.select('.body').attr('fill', tempColour(30));
+
+  [['Cold', 80], ['Warm', 220]].forEach(function(pair) {
+    demoSvg.append('text').attr('x', pair[1]).attr('y', 100)
+      .attr('text-anchor', 'middle')
+      .style('font-family', 'Georgia, serif').style('font-size', '18px').style('fill', '#555')
+      .text(pair[0]);
+  });
+
+})();
+</script>
+</body>
+</html>
