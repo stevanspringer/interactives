@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>Group Locations</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+
+<style>
+  :root { color-scheme: light only; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { background: #fff !important; }
+
+  body {
+    background: #fff !important;
+    color: #1b1e23;
+    font-family: Georgia, serif;
+    font-size: 18px;
+    line-height: 1.6;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  h1 {
+    font-size: 2em;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 0.1em;
+  }
+
+  h2 {
+    font-size: 1.3em;
+    font-weight: 700;
+    margin: 2.2em 0 0.5em;
+  }
+
+  h3 {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin: 1.4em 0 0.3em;
+    font-style: italic;
+  }
+
+  h4 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 1.2em 0 0.25em;
+  }
+
+  p { margin-bottom: 0.9em; }
+  em { font-style: italic; }
+  strong { font-weight: 600; }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e8e8e8;
+    margin: 2em 0;
+  }
+
+  /* ── CONTROLS ─────────────────────────────────── */
+  .controls {
+    margin: 1.2em 0 0.6em;
+  }
+
+  .slider-label {
+    font-size: 0.95em;
+    color: #555;
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+
+  .slider-value {
+    font-size: 1em;
+    font-weight: 700;
+    color: #1b1e23;
+    margin-bottom: 4px;
+  }
+
+  .slider-track {
+    position: relative;
+    padding-bottom: 24px;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: #ddd;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #1b1e23;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1.5px #1b1e23;
+  }
+
+  input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #1b1e23;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1.5px #1b1e23;
+  }
+
+  .tick-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78em;
+    color: #aaa;
+    font-style: italic;
+    margin-top: 6px;
+    user-select: none;
+  }
+
+  /* ── GRAPH BOX — square via padding trick ─────── */
+  .graph-box {
+    margin: 0.5em 0 1.2em;
+    border: 1px solid #e8e8e8;
+    border-radius: 2px;
+    overflow: hidden;
+    width: 100%;
+    position: relative;
+    padding-bottom: 100%;
+  }
+
+  .graph-box svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: block;
+    overflow: hidden;
+  }
+
+  .node circle {
+    fill: #fff;
+    stroke: #fff;
+    stroke-width: 1.5;
+  }
+
+  .node text {
+    font-family: Georgia, serif;
+    fill: #1b1e23;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .link {
+    stroke: #bbb;
+    stroke-width: 1.5;
+  }
+
+  /* ── NAVIGATION ───────────────────────────────── */
+  .nav-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4em;
+    font-size: 0.92em;
+  }
+  .nav-table td { padding: 0; vertical-align: top; }
+  .nav-table .nav-prev { width: 35%; text-align: left; }
+  .nav-table .nav-home { width: 30%; text-align: center; }
+  .nav-table .nav-next { width: 35%; text-align: right; }
+  .nav-table a { color: #1b1e23; text-decoration: none; font-style: italic; }
+  .nav-table a:hover { text-decoration: underline; }
+  .nav-label {
+    font-size: 0.82em;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  footer {
+    margin-top: 4em;
+    font-size: 0.95em;
+    color: #aaa;
+    font-style: italic;
+  }
+  footer a { color: #aaa; }
+</style>
+</head>
+<body>
+
+<h1>Group Locations</h1>
+<h3>Arranging groups in a ring using a force-directed layout.</h3>
+<hr>
+
+<h2 id="ring-heading">A Ring of 26 Groups</h2>
+
+<p>This is a force-directed graph: the groups repel each other, but connections between neighbours act as springs that pull things together. The ring emerges as the equilibrium of these two opposing forces.</p>
+
+<div class="controls">
+  <div class="slider-track">
+    <input type="range" id="ring-slider" min="1" max="26" step="1" value="26">
+    <div class="tick-labels">
+      <span>A</span>
+      <span>Z</span>
+    </div>
+  </div>
+</div>
+
+<div class="graph-box" id="graph-box"></div>
+
+<hr>
+
+<table class="nav-table">
+  <tr>
+    <td class="nav-prev"></td>
+    <td class="nav-home"><span class="nav-label">Course</span><a href="index.html">Index</a></td>
+    <td class="nav-next"></td>
+  </tr>
+</table>
+
+<footer>Group Locations<br>Stevan Springer &middot; UPEI Biology &middot; <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a></footer>
+
+<script>
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+let simulation = null;
+
+function buildGraph(n) {
+  const nodes = LETTERS.slice(0, n).map((label, i) => ({ id: i, label }));
+  const links = [];
+  if (n === 2) {
+    links.push({ source: 0, target: 1 });
+  } else if (n > 2) {
+    for (let i = 0; i < n; i++) {
+      links.push({ source: i, target: (i + 1) % n });
+    }
+  }
+  return { nodes, links };
+}
+
+function render(n) {
+  const box = document.getElementById('graph-box');
+  const W = box.offsetWidth;
+  const H = W; // square
+  const cx = W / 2, cy = H / 2;
+
+  if (simulation) simulation.stop();
+  d3.select(box).selectAll('*').remove();
+
+  const { nodes, links } = buildGraph(n);
+
+  const svg = d3.select(box).append('svg')
+    .attr('width', W).attr('height', H)
+    .style('font-family', 'Georgia, serif');
+
+  const linkSel = svg.append('g')
+    .selectAll('line')
+    .data(links)
+    .join('line')
+    .attr('class', 'link');
+
+  const nodeSel = svg.append('g')
+    .selectAll('g')
+    .data(nodes)
+    .join('g')
+    .attr('class', 'node')
+    .call(d3.drag()
+      .on('start', dragStart)
+      .on('drag',  dragged)
+      .on('end',   dragEnd)
+    );
+
+  // Circle sized to comfortably enclose a 36px letter; fixed regardless of count
+  const nodeR = 26;
+
+  nodeSel.append('circle')
+    .attr('r', nodeR)
+    .attr('fill', '#fff')
+    .attr('stroke', '#fff');
+
+  nodeSel.append('text')
+    .text(d => d.label)
+    .style('font-size', '36px');
+
+  // Seed positions in a geometric ring for fast convergence
+  const ringR = Math.min(cx, cy) * 0.72;
+  nodes.forEach((d, i) => {
+    const angle = (2 * Math.PI * i / Math.max(n, 1)) - Math.PI / 2;
+    d.x = cx + ringR * Math.cos(angle);
+    d.y = cy + ringR * Math.sin(angle);
+  });
+
+  const linkDist = n <= 2
+    ? W * 0.35
+    : Math.max(nodeR * 2.8, (2 * Math.PI * ringR) / n * 0.95);
+
+  simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(linkDist).strength(0.7))
+    .force('charge', d3.forceManyBody().strength(-120))
+    .force('center', d3.forceCenter(cx, cy))
+    .force('collision', d3.forceCollide(nodeR + 2))
+    .alphaDecay(0.03)
+    .on('tick', () => {
+      nodes.forEach(d => {
+        d.x = Math.max(nodeR + 4, Math.min(W - nodeR - 4, d.x));
+        d.y = Math.max(nodeR + 4, Math.min(H - nodeR - 4, d.y));
+      });
+      linkSel
+        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+      nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+
+  function dragStart(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x; d.fy = d.y;
+  }
+  function dragged(event, d) {
+    d.fx = Math.max(nodeR + 4, Math.min(W - nodeR - 4, event.x));
+    d.fy = Math.max(nodeR + 4, Math.min(H - nodeR - 4, event.y));
+  }
+  function dragEnd(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null; d.fy = null;
+  }
+}
+
+function updateHeading(n) {
+  const label = n === 1 ? 'A — A Ring of 1 Group' : `${LETTERS[n - 1]} — A Ring of ${n} Groups`;
+  document.getElementById('ring-heading').textContent = label;
+}
+
+function sliderLabel(n) {
+  if (n === 1) return 'A (1 group)';
+  return `${LETTERS[n - 1]} (${n} groups)`;
+}
+
+const slider = document.getElementById('ring-slider');
+
+slider.addEventListener('input', () => {
+  const n = +slider.value;
+  updateHeading(n);
+  render(n);
+});
+
+window.addEventListener('resize', () => render(+slider.value));
+
+window.addEventListener('DOMContentLoaded', () => {
+  const n = +slider.value;
+  updateHeading(n);
+  render(n);
+});
+</script>
+</body>
+</html>
