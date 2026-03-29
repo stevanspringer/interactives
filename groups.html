@@ -143,9 +143,8 @@
   }
 
   .node circle {
-    fill: #fff;
     stroke: #fff;
-    stroke-width: 1.5;
+    stroke-width: 4;
   }
 
   .node text {
@@ -201,12 +200,13 @@
 
 <h2 id="ring-heading">A Ring of 26 Groups</h2>
 
-<p>This is a force-directed graph, it works like this:</p>
+<p>This is a force-directed graph, it works by modelling a system:</p>
 <ol style="margin: 0 0 0.9em 1.4em; padding: 0;">
-  <li>Groups repel each other.</li>
-  <li>Springs pull neighbours together.</li>
+  <li><strong>Constraint:</strong> A is connected to the largest letter.</li>
+  <li><strong>Interaction:</strong> Groups repel each other.</li>
+  <li><strong>Interaction:</strong> Strings pull neighbouring groups together.</li>
 </ol>
-<p>A ring emerges as the equilibrium of these two opposing forces.</p>
+<p>A ring emerges as the equilibrium of these conditions.</p>
 
 <div class="controls">
   <div class="slider-track">
@@ -237,7 +237,11 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 let simulation = null;
 
 function buildGraph(n) {
-  const nodes = LETTERS.slice(0, n).map((label, i) => ({ id: i, label }));
+  // Ring nodes (A–n) plus one centre node showing the count
+  const nodes = LETTERS.slice(0, n).map((label, i) => ({ id: i, label, isCenter: false }));
+  // Centre node: id = n, positioned at cx/cy, not part of the ring edges
+  nodes.push({ id: n, label: String(n), isCenter: true });
+
   const links = [];
   if (n === 2) {
     links.push({ source: 0, target: 1 });
@@ -282,37 +286,61 @@ function render(n) {
     );
 
   const nodeR = 26;
+  const centerR = 34; // slightly larger for the count node
 
   nodeSel.append('circle')
-    .attr('r', nodeR)
-    .attr('fill', '#fff')
-    .attr('stroke', '#fff');
+    .attr('r', d => d.isCenter ? centerR : nodeR)
+    .attr('fill', d => d.isCenter ? '#f5f5f5' : '#ddeaf3')
+    .attr('stroke', d => d.isCenter ? '#ddd' : '#ddeaf3');
 
   nodeSel.append('text')
     .text(d => d.label)
-    .style('font-size', '36px');
+    .style('font-size', d => d.isCenter ? '38px' : '36px')
+    .style('fill', d => d.isCenter ? '#aaa' : '#1b1e23');
 
   const ringR = Math.min(cx, cy) * 0.72;
+
+  // Seed ring nodes around the ring; centre node starts at cx/cy
   nodes.forEach((d, i) => {
-    const angle = (2 * Math.PI * i / Math.max(n, 1)) - Math.PI / 2;
-    d.x = cx + ringR * Math.cos(angle);
-    d.y = cy + ringR * Math.sin(angle);
+    if (d.isCenter) {
+      d.x = cx; d.y = cy;
+    } else {
+      const angle = (2 * Math.PI * i / Math.max(n, 1)) - Math.PI / 2;
+      d.x = cx + ringR * Math.cos(angle);
+      d.y = cy + ringR * Math.sin(angle);
+    }
   });
 
   const linkDist = n <= 2
     ? W * 0.35
     : Math.max(nodeR * 2.8, (2 * Math.PI * ringR) / n * 0.95);
 
+  // Custom force: pulls centre node toward cx/cy, lets ring nodes repel it naturally
+  function forceCenterPin() {
+    let _nodes;
+    function force(alpha) {
+      _nodes.forEach(d => {
+        if (!d.isCenter || d.fx != null) return;
+        d.vx += (cx - d.x) * 0.15 * alpha;
+        d.vy += (cy - d.y) * 0.15 * alpha;
+      });
+    }
+    force.initialize = ns => { _nodes = ns; };
+    return force;
+  }
+
   simulation = d3.forceSimulation(nodes)
     .force('link', d3.forceLink(links).id(d => d.id).distance(linkDist).strength(0.7))
     .force('charge', d3.forceManyBody().strength(-120))
     .force('center', d3.forceCenter(cx, cy))
-    .force('collision', d3.forceCollide(nodeR + 2))
+    .force('collision', d3.forceCollide(d => (d.isCenter ? centerR : nodeR) + 2))
+    .force('centerPin', forceCenterPin())
     .alphaDecay(0.03)
     .on('tick', () => {
       nodes.forEach(d => {
-        d.x = Math.max(nodeR + 4, Math.min(W - nodeR - 4, d.x));
-        d.y = Math.max(nodeR + 4, Math.min(H - nodeR - 4, d.y));
+        const r = d.isCenter ? centerR : nodeR;
+        d.x = Math.max(r + 4, Math.min(W - r - 4, d.x));
+        d.y = Math.max(r + 4, Math.min(H - r - 4, d.y));
       });
       linkSel
         .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
@@ -325,8 +353,9 @@ function render(n) {
     d.fx = d.x; d.fy = d.y;
   }
   function dragged(event, d) {
-    d.fx = Math.max(nodeR + 4, Math.min(W - nodeR - 4, event.x));
-    d.fy = Math.max(nodeR + 4, Math.min(H - nodeR - 4, event.y));
+    const r = d.isCenter ? centerR : nodeR;
+    d.fx = Math.max(r + 4, Math.min(W - r - 4, event.x));
+    d.fy = Math.max(r + 4, Math.min(H - r - 4, event.y));
   }
   function dragEnd(event, d) {
     if (!event.active) simulation.alphaTarget(0);
