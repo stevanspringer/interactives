@@ -196,12 +196,17 @@
 <body>
 
 <h1>Group Locations</h1>
-<h3>Arranging groups in a ring using a force-directed layout.</h3>
+<h3>Arranging groups using a force-directed graph.</h3>
 <hr>
 
 <h2 id="ring-heading">A Ring of 26 Groups</h2>
 
-<p>This is a force-directed graph: the groups repel each other, but connections between neighbours act as springs that pull things together. The ring emerges as the equilibrium of these two opposing forces.</p>
+<p>This is a force-directed graph, it works like this:</p>
+<ol style="margin: 0 0 0.9em 1.4em; padding: 0;">
+  <li>Groups repel each other.</li>
+  <li>Springs pull neighbours together.</li>
+</ol>
+<p>A ring emerges as the equilibrium of these two opposing forces.</p>
 
 <div class="controls">
   <div class="slider-track">
@@ -247,7 +252,7 @@ function buildGraph(n) {
 function render(n) {
   const box = document.getElementById('graph-box');
   const W = box.offsetWidth;
-  const H = W; // square
+  const H = W;
   const cx = W / 2, cy = H / 2;
 
   if (simulation) simulation.stop();
@@ -276,7 +281,6 @@ function render(n) {
       .on('end',   dragEnd)
     );
 
-  // Circle sized to comfortably enclose a 36px letter; fixed regardless of count
   const nodeR = 26;
 
   nodeSel.append('circle')
@@ -288,7 +292,6 @@ function render(n) {
     .text(d => d.label)
     .style('font-size', '36px');
 
-  // Seed positions in a geometric ring for fast convergence
   const ringR = Math.min(cx, cy) * 0.72;
   nodes.forEach((d, i) => {
     const angle = (2 * Math.PI * i / Math.max(n, 1)) - Math.PI / 2;
@@ -334,11 +337,6 @@ function render(n) {
 function updateHeading(n) {
   const label = n === 1 ? 'A — A Ring of 1 Group' : `${LETTERS[n - 1]} — A Ring of ${n} Groups`;
   document.getElementById('ring-heading').textContent = label;
-}
-
-function sliderLabel(n) {
-  if (n === 1) return 'A (1 group)';
-  return `${LETTERS[n - 1]} (${n} groups)`;
 }
 
 const slider = document.getElementById('ring-slider');
