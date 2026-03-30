@@ -769,14 +769,24 @@ function buildPad() {
 
   updatePadPos();
 
-  // Drag
-  svg.call(d3.drag().on('start drag', function(event) {
-    const [ex, ey] = d3.pointer(event, g.node());
+  // Drag — mouse and touch
+  function handlePointer(nativeEvent) {
+    nativeEvent.preventDefault();
+    const src = nativeEvent.touches ? nativeEvent.touches[0] : nativeEvent;
+    const rect = svg.node().getBoundingClientRect();
+    const ex = (src.clientX - rect.left) - ml;
+    const ey = (src.clientY - rect.top)  - mt;
     padT = Math.max(0, Math.min(1, xS.invert(ex)));
     padS = Math.max(0, Math.min(1, yS.invert(ey)));
     applyPadValues();
     updatePadPos();
-  }));
+  }
+
+  const svgNode = svg.node();
+  svgNode.addEventListener('mousedown',  handlePointer);
+  svgNode.addEventListener('mousemove',  e => { if (e.buttons) handlePointer(e); });
+  svgNode.addEventListener('touchstart', handlePointer, { passive: false });
+  svgNode.addEventListener('touchmove',  handlePointer, { passive: false });
 }
 
 document.getElementById('btn-restart').addEventListener('click', startSim);
