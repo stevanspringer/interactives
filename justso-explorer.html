@@ -135,6 +135,48 @@ td:last-child{border-right:none;}
 <script>
 'use strict';
 
+// ── Touch / pointer helpers ───────────────────────────────────
+// isTouch: true when the primary input is touch (no fine pointer)
+const isTouch=()=>window.matchMedia('(pointer:coarse)').matches;
+
+// onHover(el, enterFn, leaveFn):
+//   Attaches mouseenter/mouseleave for mouse, and touchstart/touchend for touch.
+//   On touch: touchstart calls enterFn; touchend/touchcancel calls leaveFn.
+//   preventDefault on touchstart stops the browser synthesising a delayed mouseenter.
+function onHover(el, enterFn, leaveFn){
+  el.addEventListener('mouseenter', enterFn);
+  if(leaveFn) el.addEventListener('mouseleave', leaveFn);
+  el.addEventListener('touchstart', e=>{
+    e.preventDefault();          // suppress synthetic mouse events
+    enterFn(e);
+  }, {passive:false});
+  if(leaveFn){
+    el.addEventListener('touchend',    e=>{e.preventDefault(); leaveFn(e);}, {passive:false});
+    el.addEventListener('touchcancel', e=>{e.preventDefault(); leaveFn(e);}, {passive:false});
+  }
+}
+
+// d3Hover(sel, enterFn, leaveFn):
+//   Same idea for D3 selections — attaches both mouse and touch event listeners.
+function d3Hover(sel, enterFn, leaveFn){
+  sel.on('mouseenter', enterFn);
+  if(leaveFn) sel.on('mouseleave', leaveFn);
+  sel.on('touchstart.hover', function(e,d){
+    e.preventDefault();
+    enterFn.call(this,e,d);
+  });
+  if(leaveFn){
+    sel.on('touchend.hover', function(e,d){
+      e.preventDefault();
+      leaveFn.call(this,e,d);
+    });
+    sel.on('touchcancel.hover', function(e,d){
+      e.preventDefault();
+      leaveFn.call(this,e,d);
+    });
+  }
+}
+
 // Step colour palette — endpoints fixed, intermediates interpolated for any nMut
 const SC_PALETTE=['#2b4596','#4575b4','#3a9a78','#91cf60','#fee08b','#fc8d59','#7a1818'];
 // SC[i] returns colour for step i out of nMut, always anchored at navy (0) and crimson (nMut)
@@ -498,30 +540,30 @@ function buildLeg(){
     if(i<nMut){
       const col=SC[i+1];const ar=document.createElement('span');ar.className='step-arr';ar.style.color=col;
       ar.innerHTML=`<svg width="10" height="10" viewBox="0 0 10 10"><polygon points="1,1 9,5 1,9" fill="${col}"/></svg>`;
-      ar.onmouseenter=()=>{selMode='arrow';selArrow=i+1;renderAll();};
+      onHover(ar, ()=>{selMode='arrow';selArrow=i+1;renderAll();});
       sLeg.appendChild(ar);
     }
   });
   // Save on enter, restore on leave at container level
-  sLeg.onmouseenter=()=>saveSel();
-  sLeg.onmouseleave=()=>{restoreSel();renderAll();};
+  onHover(sLeg, ()=>saveSel(), ()=>{restoreSel();renderAll();});
 
   const siLeg=document.getElementById('siLeg');siLeg.innerHTML='';
   const ac=document.createElement('span');ac.className='site-chip all-chip';ac.textContent='All';
-  ac.onmouseenter=()=>{selMode='all';renderAll();};
+  onHover(ac, ()=>{selMode='all';renderAll();});
   siLeg.appendChild(ac);
   sites.forEach(s=>{
     const ch=document.createElement('span');ch.className='site-chip';ch.textContent=s;
-    ch.onmouseenter=()=>{selMode='site';selSite=s;showSiteTip(s);renderAll();};
-    ch.onmouseleave=()=>{hideTip();};
+    onHover(ch,
+      ()=>{selMode='site';selSite=s;showSiteTip(s);renderAll();},
+      ()=>{hideTip();});
     siLeg.appendChild(ch);
   });
-  siLeg.onmouseenter=()=>saveSel();
-  siLeg.onmouseleave=()=>{restoreSel();renderAll();};
+  onHover(siLeg, ()=>saveSel(), ()=>{restoreSel();renderAll();});
 
   // Panel C hover → show all, restore on leave
-  document.getElementById('tdC').onmouseenter=()=>{if(selMode!=='dot'){saveSel();selMode='all';renderAll();}};
-  document.getElementById('tdC').onmouseleave=()=>{if(selMode!=='dot'){restoreSel();renderAll();}};
+  onHover(document.getElementById('tdC'),
+    ()=>{if(selMode!=='dot'){saveSel();selMode='all';renderAll();}},
+    ()=>{if(selMode!=='dot'){restoreSel();renderAll();}});
 }
 
 function sz(id){const r=document.getElementById(id).getBoundingClientRect();return{W:Math.floor(r.width),H:Math.floor(r.height)};}
@@ -581,15 +623,9 @@ function renderA(){
         .attr('width',x1-x0).attr('height',pH)
         .attr('fill','transparent')
         .style('cursor','pointer');
-      stripe
-        .on('mouseenter',function(){
-          selMode='arrow'; selArrow=i+1; renderAll();
-          d3.select(this).attr('fill',col+'18');
-        })
-        .on('mouseleave',function(){
-          d3.select(this).attr('fill','transparent');
-          restoreSel(); renderAll();
-        });
+      d3Hover(stripe,
+        function(){ selMode='arrow'; selArrow=i+1; renderAll(); d3.select(this).attr('fill',col+'18'); },
+        function(){ d3.select(this).attr('fill','transparent'); restoreSel(); renderAll(); });
     }
     // Final stripe: derived neighbourhood
     {
@@ -600,15 +636,9 @@ function renderA(){
         .attr('width',x1-x0).attr('height',pH)
         .attr('fill','transparent')
         .style('cursor','pointer');
-      stripe
-        .on('mouseenter',function(){
-          selMode='step'; selArrow=nMut; renderAll();
-          d3.select(this).attr('fill',col+'18');
-        })
-        .on('mouseleave',function(){
-          d3.select(this).attr('fill','transparent');
-          restoreSel(); renderAll();
-        });
+      d3Hover(stripe,
+        function(){ selMode='step'; selArrow=nMut; renderAll(); d3.select(this).attr('fill',col+'18'); },
+        function(){ d3.select(this).attr('fill','transparent'); restoreSel(); renderAll(); });
     }
 
     g.append('g').attr('class','ax').attr('transform',`translate(0,${pH})`)
@@ -624,12 +654,13 @@ function renderA(){
       const lbl=d.changesNum===0?'A':'D';
       g.append('line').attr('class','refl')
         .attr('x1',0).attr('x2',iW).attr('y1',ySc(yv)).attr('y2',ySc(yv));
-      g.append('circle')
-        .attr('cx',iW+14).attr('cy',ySc(yv))
-        .attr('r',10).attr('fill',col)
-        .style('cursor','pointer')
-        .on('mouseenter',function(){ selMode='dot'; selDot=d.index; renderAll(); })
-        .on('mouseleave',function(){ restoreSel(); renderAll(); });
+      d3Hover(
+        g.append('circle')
+          .attr('cx',iW+14).attr('cy',ySc(yv))
+          .attr('r',10).attr('fill',col)
+          .style('cursor','pointer'),
+        function(){ selMode='dot'; selDot=d.index; renderAll(); },
+        function(){ restoreSel(); renderAll(); });
       g.append('text')
         .attr('x',iW+14).attr('y',ySc(yv)+4)
         .attr('text-anchor','middle')
@@ -647,7 +678,7 @@ function renderA(){
         .attr('stroke',SC[e.step]).attr('stroke-width',on?1.6:.5).attr('stroke-opacity',on?.85:.07);
     });
 
-    g.selectAll('circle.dotA').data(IM).join('circle')
+    const dotSel=g.selectAll('circle.dotA').data(IM).join('circle')
       .attr('class','dotA')
       .attr('cx',d=>xSc(d.changesNum))
       .attr('cy',d=>ySc(acc(d)))
@@ -656,6 +687,10 @@ function renderA(){
       .attr('stroke',d=>(selDot===d.index&&d.changesNum>0&&d.changesNum<nMut)?'var(--ink)':'none').attr('stroke-width',1.5)
       .style('cursor','pointer')
       .on('click',(e,d)=>{if(selDot===d.index)clearSel();else{clearSel();selMode='dot';selDot=d.index;}renderAll();});
+    dotSel.on('touchend.click',function(e,d){
+      e.preventDefault();
+      if(selDot===d.index)clearSel();else{clearSel();selMode='dot';selDot=d.index;}renderAll();
+    });
 
     if(isBot)g.append('text').attr('class','axlbl').attr('x',iW/2).attr('y',pH+36).attr('text-anchor','middle').text('# of Mutations');
   }
@@ -663,8 +698,7 @@ function renderA(){
   sub(mT+pH+gap,xScA,tx,traitLabel(traitX),true);
 
   // Save on enter so leave can restore; clear arrow state on leave
-  sv.on('mouseenter',()=>saveSel())
-    .on('mouseleave',()=>{ restoreSel(); renderAll(); });
+  d3Hover(sv, ()=>saveSel(), ()=>{ restoreSel(); renderAll(); });
 }
 
 // ── PANEL B ──────────────────────────────────────────────────
@@ -685,7 +719,7 @@ function renderB(){
   const ySc=d3.scaleLinear().domain(domY_AB).range([iH,0]);
   // Save state on panel enter
   const g=sv.append('g').attr('transform',`translate(${mL},${mT})`);
-  sv.on('mouseenter',()=>saveSel());
+  d3Hover(sv, ()=>saveSel());
 
   // NO grid lines in panel B
   g.append('g').attr('class','ax').attr('transform',`translate(0,${iH})`)
@@ -715,9 +749,12 @@ function renderB(){
     .attr('fill-opacity',d=>!ns||ns.has(d.index)?0.9:0.1)
     .attr('stroke',d=>(selDot===d.index&&d.changesNum>0&&d.changesNum<nMut)?'var(--ink)':'white')
     .attr('stroke-width',d=>(selDot===d.index&&d.changesNum>0&&d.changesNum<nMut)?1.6:.5)
-    .style('cursor','pointer')
-    .on('mouseenter',(e,d)=>{ selMode='dot'; selDot=d.index; renderAll(); showPinnedInfo(d); })
-    .on('mouseleave',()=>{ hideTip(); })
+    .style('cursor','pointer');
+  d3Hover(
+    g.selectAll('circle.dotB'),
+    (e,d)=>{ selMode='dot'; selDot=d.index; renderAll(); showPinnedInfo(d); },
+    ()=>{ hideTip(); });
+  g.selectAll('circle.dotB')
     .on('click',(e,d)=>{ clearSel(); lastMode=null;lastArrow=null;lastSite=null;lastDot=null; renderAll(); });
 
   // A and D: labelled dots matching panel A reference circle size
@@ -727,11 +764,12 @@ function renderB(){
     const lbl=d.changesNum===0?'A':'D';
     const cx=xSc(tx(d)), cy=ySc(ty(d));
     const op=!ns||ns.has(d.index)?1:0.15;
-    g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',10)
+    const circ=g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',10)
       .attr('fill',col).attr('fill-opacity',op).attr('stroke','white').attr('stroke-width',.5)
-      .style('cursor','pointer')
-      .on('mouseenter',()=>{ selMode='dot'; selDot=d.index; renderAll(); showPinnedInfo(d); })
-      .on('mouseleave',()=>{ hideTip(); });
+      .style('cursor','pointer');
+    d3Hover(circ,
+      ()=>{ selMode='dot'; selDot=d.index; renderAll(); showPinnedInfo(d); },
+      ()=>{ hideTip(); });
     g.append('text').attr('x',cx).attr('y',cy+4)
       .attr('text-anchor','middle')
       .attr('font-family','DM Mono,monospace').attr('font-size',12).attr('font-weight','400')
@@ -739,7 +777,7 @@ function renderB(){
   });
 
   // Leaving panel B entirely restores the pre-B state
-  sv.on('mouseleave',()=>{ restoreSel(); renderAll(); hideTip(); });
+  d3Hover(sv, null, ()=>{ restoreSel(); renderAll(); hideTip(); });
 }
 
 // ── PANEL C ──────────────────────────────────────────────────
@@ -992,8 +1030,9 @@ function renderD(){
     const stepNum = label==='Ancestral' ? 0 : nMut;
     const im = IM ? IM.find(d=>d.changesNum===stepNum) : null;
     if(im){
-      lbl.addEventListener('mouseenter',()=>{ selMode='dot'; selDot=im.index; renderAll(); });
-      lbl.addEventListener('mouseleave',()=>{ selMode=null; selDot=null; renderAll(); });
+      onHover(lbl,
+        ()=>{ selMode='dot'; selDot=im.index; renderAll(); },
+        ()=>{ selMode=null; selDot=null; renderAll(); });
       lbl.title=`${label}: ${traitLabel(traitX)} ${traitFmt(traitX,tx(im))} · ${traitLabel(traitY)} ${traitFmt(traitY,ty(im))}`;
     }
     row.appendChild(lbl);
@@ -1011,8 +1050,9 @@ function renderD(){
       span.style.color=isDiff?'white':rowCol;
       if(isDiff){
         const site=i+1;
-        span.addEventListener('mouseenter',()=>{ selMode='site'; selSite=site; showSiteTip(site); renderAll(); });
-        span.addEventListener('mouseleave',()=>{ selMode=null; selSite=null; hideTip(); renderAll(); });
+        onHover(span,
+          ()=>{ selMode='site'; selSite=site; showSiteTip(site); renderAll(); },
+          ()=>{ selMode=null; selSite=null; hideTip(); renderAll(); });
         span.title=`Position ${site}: ${sA[i]||'?'}→${sD[i]||'?'}`;
       }
       seqDiv.appendChild(span);
@@ -1048,15 +1088,24 @@ function renderD(){
   inner.appendChild(posRow);
 
   // Save state when entering alignment panel, restore when leaving entirely
-  inner.addEventListener('mouseenter',()=>saveSel());
-  inner.addEventListener('mouseleave',()=>{ restoreSel(); renderAll(); });
+  onHover(inner, ()=>saveSel(), ()=>{ restoreSel(); renderAll(); });
 
-  // ── Drag to scroll ──
+  // ── Drag / swipe to scroll ──
   const outer=document.getElementById('alignOuter');
   let isDragging=false, startX=0, startScroll=0;
   outer.onmousedown=e=>{isDragging=true;startX=e.clientX;startScroll=outer.scrollLeft;outer.style.cursor='grabbing';};
   document.addEventListener('mouseup',()=>{isDragging=false;if(outer)outer.style.cursor='grab';});
   outer.onmousemove=e=>{if(!isDragging)return;outer.scrollLeft=startScroll-(e.clientX-startX);};
+  // Touch swipe (passive so scroll isn't blocked, but we drive it manually)
+  outer.addEventListener('touchstart',e=>{
+    isDragging=true;startX=e.touches[0].clientX;startScroll=outer.scrollLeft;
+  },{passive:true});
+  outer.addEventListener('touchend',  ()=>{isDragging=false;},{passive:true});
+  outer.addEventListener('touchcancel',()=>{isDragging=false;},{passive:true});
+  outer.addEventListener('touchmove',e=>{
+    if(!isDragging)return;
+    outer.scrollLeft=startScroll-(e.touches[0].clientX-startX);
+  },{passive:true});
 }
 
 function renderAll(){
