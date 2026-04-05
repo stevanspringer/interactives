@@ -135,46 +135,77 @@ td:last-child{border-right:none;}
 <script>
 'use strict';
 
-// ── Touch / pointer helpers ───────────────────────────────────
-// isTouch: true when the primary input is touch (no fine pointer)
-const isTouch=()=>window.matchMedia('(pointer:coarse)').matches;
+// ── Input model ───────────────────────────────────────────────
+// Mouse: hover is transient — enter activates, leave deactivates.
+// Touch: hover is sticky  — tap activates (or deactivates if same target), tap elsewhere switches.
+//
+// We detect touch by watching for a 'touchstart' on the document and setting a flag.
+// This is more reliable than (pointer:coarse) which can be true on laptops with touch screens.
+let usingTouch=false;
+document.addEventListener('touchstart',()=>{usingTouch=true;},{passive:true,once:true});
+
+// stickyTarget: the element currently "hovered" by touch. Cleared on tap-elsewhere.
+let stickyEnterFn=null, stickyLeaveFn=null;
+function stickyActivate(enterFn, leaveFn){
+  // If tapping the same logical target, toggle off
+  if(stickyEnterFn===enterFn){ stickyRelease(); return; }
+  stickyRelease();
+  stickyEnterFn=enterFn; stickyLeaveFn=leaveFn;
+  enterFn();
+}
+function stickyRelease(){
+  if(stickyLeaveFn) stickyLeaveFn();
+  stickyEnterFn=null; stickyLeaveFn=null;
+}
 
 // onHover(el, enterFn, leaveFn):
-//   Attaches mouseenter/mouseleave for mouse, and touchstart/touchend for touch.
-//   On touch: touchstart calls enterFn; touchend/touchcancel calls leaveFn.
-//   preventDefault on touchstart stops the browser synthesising a delayed mouseenter.
+//   Mouse: standard mouseenter/mouseleave.
+//   Touch: touchstart activates sticky; no touchend handler (sticky persists until tap elsewhere).
 function onHover(el, enterFn, leaveFn){
-  el.addEventListener('mouseenter', enterFn);
-  if(leaveFn) el.addEventListener('mouseleave', leaveFn);
+  el.addEventListener('mouseenter', e=>{ if(!usingTouch) enterFn(e); });
+  if(leaveFn) el.addEventListener('mouseleave', e=>{ if(!usingTouch) leaveFn(e); });
   el.addEventListener('touchstart', e=>{
-    e.preventDefault();          // suppress synthetic mouse events
-    enterFn(e);
+    e.preventDefault();
+    e.stopPropagation();
+    usingTouch=true;
+    stickyActivate(enterFn, leaveFn||null);
   }, {passive:false});
-  if(leaveFn){
-    el.addEventListener('touchend',    e=>{e.preventDefault(); leaveFn(e);}, {passive:false});
-    el.addEventListener('touchcancel', e=>{e.preventDefault(); leaveFn(e);}, {passive:false});
-  }
 }
 
 // d3Hover(sel, enterFn, leaveFn):
-//   Same idea for D3 selections — attaches both mouse and touch event listeners.
+//   Same for D3 selections.
 function d3Hover(sel, enterFn, leaveFn){
-  sel.on('mouseenter', enterFn);
-  if(leaveFn) sel.on('mouseleave', leaveFn);
+  sel.on('mouseenter', function(e,d){ if(!usingTouch) enterFn.call(this,e,d); });
+  if(leaveFn) sel.on('mouseleave', function(e,d){ if(!usingTouch) leaveFn.call(this,e,d); });
   sel.on('touchstart.hover', function(e,d){
     e.preventDefault();
-    enterFn.call(this,e,d);
+    e.stopPropagation();
+    usingTouch=true;
+    // Bind d3 datum into the enter/leave closures
+    const ef=()=>enterFn.call(this,e,d);
+    const lf=leaveFn?(()=>leaveFn.call(this,e,d)):null;
+    stickyActivate(ef, lf);
   });
-  if(leaveFn){
-    sel.on('touchend.hover', function(e,d){
-      e.preventDefault();
-      leaveFn.call(this,e,d);
-    });
-    sel.on('touchcancel.hover', function(e,d){
-      e.preventDefault();
-      leaveFn.call(this,e,d);
-    });
-  }
+}
+
+// Global tap-to-clear: any touch on the document not caught by a specific onHover/d3Hover
+// releases the sticky selection. Use capture phase so it fires before child handlers,
+// but child handlers call stopPropagation so they win.
+document.addEventListener('touchstart', e=>{
+  usingTouch=true;
+  // Only release if the touch wasn't on an interactive element (those stop propagation)
+  stickyRelease();
+}, {passive:true});
+
+// Panel A stripes use pointermove on the SVG for smooth scrubbing on both mouse and touch.
+// This is registered per-render in renderA() and stored here so it can be removed on re-render.
+let _panelAPointerHandlers=null;
+function removePanelAPointerHandlers(){
+  if(!_panelAPointerHandlers) return;
+  const{el,move,leave}=_panelAPointerHandlers;
+  el.removeEventListener('pointermove',move);
+  el.removeEventListener('pointerleave',leave);
+  _panelAPointerHandlers=null;
 }
 
 // Step colour palette — endpoints fixed, intermediates interpolated for any nMut
@@ -591,6 +622,7 @@ function setTableHeight(){
 
 // ── PANEL A ──────────────────────────────────────────────────
 function renderA(){
+  removePanelAPointerHandlers();
   if(!IM)return;
   document.getElementById('emA').style.display='none';
   const el=document.getElementById('svgA');el.style.display='block';
@@ -614,32 +646,85 @@ function renderA(){
   function sub(oy,ySc,acc,yLbl,isBot){
     const g=sv.append('g').attr('transform',`translate(${mL},${oy})`);
 
-    // Hover stripes
-    for(let i=0;i<nMut;i++){
+    // Invisible stripes for scrub zones — visual highlight drawn separately
+    const stripeRects=[];
+    for(let i=0;i<=nMut;i++){
       const x0=xSc(i), x1=xSc(i+1);
-      const col=SC[i+1];
-      const stripe=g.append('rect')
+      const rect=g.append('rect').attr('class','stripe')
         .attr('x',x0).attr('y',0)
         .attr('width',x1-x0).attr('height',pH)
-        .attr('fill','transparent')
-        .style('cursor','pointer');
-      d3Hover(stripe,
-        function(){ selMode='arrow'; selArrow=i+1; renderAll(); d3.select(this).attr('fill',col+'18'); },
-        function(){ d3.select(this).attr('fill','transparent'); restoreSel(); renderAll(); });
+        .attr('fill','transparent').attr('data-step',i===nMut?-1:i+1);
+      stripeRects.push(rect);
     }
-    // Final stripe: derived neighbourhood
-    {
-      const x0=xSc(nMut), x1=xSc(nMut+1);
-      const col=SC[nMut];
-      const stripe=g.append('rect')
-        .attr('x',x0).attr('y',0)
-        .attr('width',x1-x0).attr('height',pH)
-        .attr('fill','transparent')
-        .style('cursor','pointer');
-      d3Hover(stripe,
-        function(){ selMode='step'; selArrow=nMut; renderAll(); d3.select(this).attr('fill',col+'18'); },
-        function(){ d3.select(this).attr('fill','transparent'); restoreSel(); renderAll(); });
+    // Active stripe highlight element (single rect, moved as needed)
+    const highlight=g.append('rect').attr('class','stripe-hl')
+      .attr('y',0).attr('height',pH).attr('fill','transparent').attr('pointer-events','none');
+
+    function activateStripe(step){
+      // step: 1..nMut for arrow, -1 for derived stripe (step nMut)
+      const isStep=(step===-1);
+      const s=isStep?nMut:step;
+      const col=SC[s];
+      highlight.attr('x',xSc(isStep?nMut:s-1)).attr('width',xSc(isStep?nMut+1:s)-xSc(isStep?nMut:s-1)).attr('fill',col+'18');
+      if(isStep){ selMode='step'; selArrow=nMut; }
+      else { selMode='arrow'; selArrow=step; }
+      renderAll();
     }
+    function deactivateStripe(){
+      highlight.attr('fill','transparent');
+      restoreSel(); renderAll();
+    }
+
+    // All stripe interaction via pointermove on the group — fires for both mouse scrub and touch drag
+    // This avoids enter/leave gaps between adjacent stripes (the jitter source)
+    const svgEl=el; // the SVG DOM element
+    const allStripes=stripeRects.map(r=>r.node());
+
+    function getStepFromPoint(clientX, clientY){
+      // Use SVG coordinate transform to find which stripe column x falls in
+      const pt=svgEl.createSVGPoint();
+      pt.x=clientX; pt.y=clientY;
+      const svgPt=pt.matrixTransform(svgEl.getScreenCTM().inverse());
+      const localX=svgPt.x - mL; // x within the sub-group
+      const localY=svgPt.y - oy;
+      if(localY<0||localY>pH) return null;
+      for(let i=0;i<=nMut;i++){
+        const x0=xSc(i), x1=xSc(i+1);
+        if(localX>=x0&&localX<x1) return i===nMut?-1:i+1;
+      }
+      return null;
+    }
+
+    // Pointer move: works for mouse drag and touch move across stripes
+    const onPMove=e=>{
+      const clientX=e.touches?e.touches[0].clientX:e.clientX;
+      const clientY=e.touches?e.touches[0].clientY:e.clientY;
+      const step=getStepFromPoint(clientX,clientY);
+      if(step===null) return;
+      // Only re-render if the stripe changed
+      const cur=(selMode==='arrow'?selArrow:(selMode==='step'?-1:null));
+      if(step!==cur) activateStripe(step);
+    };
+
+    // Register pointermove on the SVG element (not the group — needs to work across both sub-panels)
+    // We store and remove in removePanelAPointerHandlers called at re-render time
+    removePanelAPointerHandlers();
+    const onPLeave=e=>{ deactivateStripe(); };
+    svgEl.addEventListener('pointermove', onPMove);
+    svgEl.addEventListener('pointerleave', onPLeave);
+    _panelAPointerHandlers={el:svgEl, move:onPMove, leave:onPLeave};
+
+    // Touch: touchmove for scrubbing across stripes
+    svgEl.addEventListener('touchmove', e=>{
+      e.preventDefault();
+      const t=e.touches[0];
+      const step=getStepFromPoint(t.clientX,t.clientY);
+      if(step!==null){
+        const cur=(selMode==='arrow'?selArrow:(selMode==='step'?-1:null));
+        if(step!==cur){ stickyEnterFn=()=>activateStripe(step); stickyLeaveFn=()=>deactivateStripe(); activateStripe(step); }
+      }
+    },{passive:false});
+
 
     g.append('g').attr('class','ax').attr('transform',`translate(0,${pH})`)
       .call(d3.axisBottom(xSc).tickValues(xTix).tickSize(4).tickFormat(d3.format('d')));
@@ -687,18 +772,16 @@ function renderA(){
       .attr('stroke',d=>(selDot===d.index&&d.changesNum>0&&d.changesNum<nMut)?'var(--ink)':'none').attr('stroke-width',1.5)
       .style('cursor','pointer')
       .on('click',(e,d)=>{if(selDot===d.index)clearSel();else{clearSel();selMode='dot';selDot=d.index;}renderAll();});
-    dotSel.on('touchend.click',function(e,d){
-      e.preventDefault();
-      if(selDot===d.index)clearSel();else{clearSel();selMode='dot';selDot=d.index;}renderAll();
-    });
 
     if(isBot)g.append('text').attr('class','axlbl').attr('x',iW/2).attr('y',pH+36).attr('text-anchor','middle').text('# of Mutations');
   }
   sub(mT,yScA,ty,traitLabel(traitY),false);
   sub(mT+pH+gap,xScA,tx,traitLabel(traitX),true);
 
-  // Save on enter so leave can restore; clear arrow state on leave
-  d3Hover(sv, ()=>saveSel(), ()=>{ restoreSel(); renderAll(); });
+  // Mouse-only: save selection state when entering the panel so leave can restore it.
+  // Touch scrubbing is handled by pointermove/touchmove registered inside sub().
+  el.addEventListener('mouseenter', ()=>{ if(!usingTouch) saveSel(); });
+  el.addEventListener('mouseleave', ()=>{ if(!usingTouch){ restoreSel(); renderAll(); } });
 }
 
 // ── PANEL B ──────────────────────────────────────────────────
